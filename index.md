@@ -1,35 +1,51 @@
 ---
 title: Home
 layout: home
+nav_order: 1
 ---
 
-This is a *bare-minimum* template to create a Jekyll site that uses the [Just the Docs] theme. You can easily set the created site to be published on [GitHub Pages] – the [README] file explains how to do that, along with other details.
+# What is hateoflux?
 
-If [Jekyll] is installed on your computer, you can also build and preview the created site *locally*. This lets you test changes before committing them, and avoids waiting for GitHub Pages.[^1] And you will be able to deploy your local build to a different platform than GitHub Pages.
+HATEOAS (Hypermedia as the Engine of Application State) is a critical concept in RESTful API design, allowing clients to navigate APIs dynamically using hyperlinks provided by the server. While Spring's HATEOAS library has been a standard choice for many Spring developers, it falls short in certain areas, especially when it comes to full HATEOAS support in Spring WebFlux. Although it works very well in Spring MVC, the integration with Spring WebFlux feels like an incomplete "port", with deep-rooted entanglements in Spring MVC that make it less ideal for modern reactive architectures. This is where hateoflux (HATEOas + webFLUX) steps in as a viable alternative.
 
-More specifically, the created site:
+hateoflux is a Java library created specifically to address the limitations of Spring's HATEOAS implementation. It simplifies the representation, assembly, and linking of hypermedia-driven resources in Spring-based applications. Additionally, hateoflux is lightweight and doesn't require any setup or changes in code, as it works seamlessly with Spring, including common annotations such as `@RestController`, `@PathVariable`, and `@RequestMapping`. The library has been designed with the core Spring WebFlux and JSON components in mind, providing seamless integration with existing Spring projects while offering a more intuitive and comprehensive approach to building hypermedia APIs.
 
-- uses a gem-based approach, i.e. uses a `Gemfile` and loads the `just-the-docs` gem
-- uses the [GitHub Pages / Actions workflow] to build and publish the site on GitHub Pages
+# Key Components
 
-Other than that, you're free to customize sites that you create with this template, however you like. You can easily change the versions of `just-the-docs` and Jekyll it uses, as well as adding further plugins.
+## 1. Representation Models
 
-[Browse our documentation][Just the Docs] to learn more about how to use this theme.
+In Spring HATEOAS, the `EntityModel`, `CollectionModel`, and `PagedModel` classes are commonly used to represent resources with hypermedia links. hateoflux provides its own alternatives to these models:
 
-To get started with creating a site, simply:
+- `HalResourceWrapper` replaces `EntityModel` for representing single resources with hypermedia links.
+- `HalListWrapper` serves as a unified replacement for both `CollectionModel` and `PagedModel`, allowing collections to   optionally include pagination without needing a distinct class.
 
-1. click "[use this template]" to create a GitHub repository
-2. go to Settings > Pages > Build and deployment > Source, and select GitHub Actions
+Unlike Spring's approach, which uses the notion of 'Model', hateoflux treats these as HAL wrappers, meaning that the underlying resource or DTO remains unchanged but is wrapped to add hypermedia capabilities as needed. As is common with HATEOAS, any resource in hateoflux can have another embedded resource. However, a conscious design choice was made to limit this to a single level, meaning that a main resource may have another embedded one, but the embedded resource cannot have further nested resources. This decision was made primarily to avoid impractical complexity; if a resource needs multiple levels of embedding, it may indicate that the domain model should be refined instead.
 
-If you want to maintain your docs in the `docs` directory of an existing project repo, see [Hosting your docs from an existing project repo](https://github.com/just-the-docs/just-the-docs-template/blob/main/README.md#hosting-your-docs-from-an-existing-project-repo) in the template README.
+## 2. Link-Building Capabilities
 
-----
+Link building is at the heart of HATEOAS, and Spring's HATEOAS library provides the `Link` and `WebMvcLinkBuilder` classes for generating links to controllers and methods. In contrast, hateoflux defines its own `Link` and `LinkRelation` classes, serving the same purpose as Spring's counterparts. While Spring offers separate builders like `WebMvcLinkBuilder` for MVC and `WebFluxLinkBuilder` for WebFlux, hateoflux introduces the `SpringControllerLinkBuilder` as a dedicated replacement for WebFlux scenarios.
 
-[^1]: [It can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/creating-a-github-pages-site-with-jekyll#creating-your-site).
+The builder usage in hateoflux closely mirrors that of Spring HATEOAS. Both hateoflux and Spring utilize a controller class as a reference and invoke its methods, differing primarily in declaration style. In both frameworks, paths and variables are automatically extracted, and templated URIs are expanded, making link building declarative and straightforward.
 
-[Just the Docs]: https://just-the-docs.github.io/just-the-docs/
-[GitHub Pages]: https://docs.github.com/en/pages
-[README]: https://github.com/just-the-docs/just-the-docs-template/blob/main/README.md
-[Jekyll]: https://jekyllrb.com
-[GitHub Pages / Actions workflow]: https://github.blog/changelog/2022-07-27-github-pages-custom-github-actions-workflows-beta/
-[use this template]: https://github.com/just-the-docs/just-the-docs-template/generate
+Additionally, hateoflux integrates seamlessly with Spring's annotations, such as `@RestController`, `@PathVariable`, and `@RequestMapping`, without requiring any customizations. While Spring HATEOAS includes annotations like `@Relation`, hateoflux provides replacements for the essential ones to ensure compatibility.
+
+## 3. Assemblers
+
+hateoflux also includes its own **assemblers** that serve a similar role to `RepresentationModelAssembler` in Spring's HATEOAS. Assemblers in hateoflux are responsible for converting domain objects into representation models enriched with hypermedia links. Unlike Spring's version, hateoflux assemblers are designed as interfaces that come mostly preprogrammed with default logic, making them easier to use out of the box. They help abstract the usage of all the components of hateoflux, acting as a simplified programming interface. Typically, developers only need to specify which links to create for a given resource type and how, allowing for greater extensibility and customization without the complexity.
+
+# Comparison with Spring's HATEOAS Library
+
+Spring's HATEOAS is a comprehensive package that offers much more functionality than hateoflux. In contrast, hateoflux focuses solely on reactive systems and the core principles of HATEOAS. However, it is precisely this focus that makes hateoflux easy to use and lightweight. All functionalities are carefully curated, allowing for a comfortable programming interface. The following lists the most important features of Spring's HATEOAS and hateoflux, as well as those that are not present in hateoflux:
+
+| Functionalities                                      | Spring HATEOAS                                                                | hateoflux                                          |
+|------------------------------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------|
+| Representation Model                                 | ✅ `EntityModel`, `CollectionModel`, `PagedModel`                              | ✅ `HalResourceWrapper`, `HalListWrapper`           |
+| `linkTo()` on controller method                      | ✅  With `WebMvcLinkBuilder` for MVC and `WebFluxLinkBuilder` for WebFlux | ✅  With `SpringControllerLinkBuilder`              |
+| URI templates as links (query and path parameters)   | ✅                                                                             | ✅                                                  |
+| Manual expansion of URIs (query and path parameters) | ✅                                                                             | ✅                                                  |
+| Assemblers                                           | ✅                                                                             | ✅                                                  |
+| Serialization                                        | ✅                                                                             | ✅                                                  |
+| Deserialization                                      | ✅                                                                             | ❌ no, only designed for server to client communication (i.e. serialization only) |
+| Media Types                                          | ✅ various                                                                     | ⚠️ only `application/hal+json`                      |
+| Affordance                                           | ✅                                                                             | ❌                                                  |
+| Curie                                                | ✅                                                                             | ❌                                                  |
