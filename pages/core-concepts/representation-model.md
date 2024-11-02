@@ -47,7 +47,7 @@ All wrapper classes define an `EmbeddedT`. When there is no need to embed anothe
 
 As an example, an API of an online store might expose "Order" objects, i.e.,`OrderDTO`s. In a scenario where a customer may be checking the status of an order in an app to see if it's still processing or completed, the HAL document (we're going with HAL+JSON) might look like this:
 
-```json
+```javascript
 {
   "id": 12345,
   "userId": 37,
@@ -62,7 +62,7 @@ As an example, an API of an online store might expose "Order" objects, i.e.,`Ord
 Suppose now the order was shipped. The customer might want to check both the order’s status and the shipment’s current tracking information in one consolidated view. The HAL document might now look like this:
 
 
-```json
+```javascript
 {
   "id": 12345,
   "userId": 37,

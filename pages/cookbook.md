@@ -5,7 +5,7 @@ nav_order: 5
 
 ---
 
-# Cookbook
+# Cookbook: Examples &amp; Use Cases
 {: .no_toc }
 <br>
 1. TOC
@@ -31,8 +31,9 @@ and
 import de.kamillionlabs.hateoflux.model.hal.Relation;
 import lombok.Data;
 
-@Data
-@Relation(itemRelation = "shipment", collectionRelation = "shipments")  //defines the name of the class when serialized
+//defines the name of the class when serialized
+@Relation(itemRelation = "shipment", collectionRelation = "shipments")  
+@Data 
 public class ShipmentDTO {
     int id;
     String carrier;
@@ -72,7 +73,7 @@ The numbered comments in the code correspond to the following explanations:
 8. **Self Link:** `withLinks()` in line 4 accepts an array of links (varargs). `Link.linkAsSelfOf("orders/" + id)` generates a `Link` with the relation `SELF`, i.e., a self-referential link. This method is unique of its kind as it sets the relation and an `href` simultaneously.
 
 The serialized result of this `HalResourceWrapper` is as follows:
-```json
+```javascript
 {
   "id": 12345,
   "userId": 37,
@@ -135,7 +136,7 @@ The numbered comments in the code correspond to the following explanations:
 
 The serialized result of this `HalResourceWrapper` is as follows:
 
-```json
+```javascript
 {
   "id": 12345,
   "userId": 37,
@@ -240,7 +241,7 @@ The numbered comments in the code correspond to the following explanations:
 
 The serialized result with example payload data of this `HalListWrapper` is as follows:
 
-```json
+```
 {
   "page": {                                // 1
     "size": 2,
