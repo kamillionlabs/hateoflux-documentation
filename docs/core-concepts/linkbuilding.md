@@ -1,7 +1,8 @@
 ---
 title: "Link Building"
 layout: default
-nav_order: 3
+parent: "Core Concepts"
+nav_order: 2
 ---
 # Link Building
 {: .no_toc }
@@ -39,17 +40,18 @@ Link link = Link.of("/orders/12345")
                 .withRel(IanaRelation.SELF);
 ```
 
-### Using `slash()` Method
-The `slash()` method appends URI parts to the existing `href`, ensuring proper formatting with slashes. This is useful for building links dynamically.
+### Using the `slash()` Method
+The `slash()` method appends URI parts to the existing href, ensuring proper formatting with slashes. Additionally, this method is handy because it automatically handles double slashes. Whether the base link already ends with a slash or not, it makes no difference. The same applies to the URI part provided as an argument to `slash()`—any extra slashes are managed by the method, ensuring that the resulting URL is correctly formatted without redundant slashes. This robustness is especially useful for building links dynamically.
 
 ```java
-Link baseLink = Link.of("/orders");
-Link detailedLink = baseLink.slash("12345"); 
+Link baseLink = Link.of("/orders");           //alternatively "/orders/"
+Link detailedLink = baseLink.slash("12345");  //alternatively "/12345"
 
 System.out.println(detailedLink.getHref()); 
 
-// Outputs: /orders/12345
+// Will always output: /orders/12345
 ```
+
 ### Chaining Methods
 The `Link` class methods support chaining, allowing links to be built and customized in a fluent manner.
 

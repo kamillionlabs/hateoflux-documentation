@@ -1,7 +1,8 @@
 ---
 title: "Representation Model"
 layout: default
-nav_order: 2
+parent: "Core Concepts"
+nav_order: 1
 ---
 # Representation Model
 {: .no_toc }
