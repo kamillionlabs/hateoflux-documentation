@@ -23,7 +23,7 @@ hateoflux addresses these problems by providing a reactive-first approach to bui
 * **Optimizing for Reactive Environments**: Designed specifically for WebFlux and R2DBC in mind, ensuring seamless integration and better performance in reactive architectures.
 * **Providing Focused Documentation**: Offers comprehensive guidance and examples tailored for reactive programming, reducing the learning curve.
 
-For an in-depth comparison, including detailed examples and explanations, as well as shortcomings, please refer to [hateoflux vs. Spring HATEOAS](./docs/hateoflux-vs-spring.md)
+For an in-depth comparison, including detailed examples and explanations, as well as shortcomings, please refer to [Spring HATEOAS vs. hateoflux](./docs/spring-vs-hateoflux.html)
 
 # Key Components
 

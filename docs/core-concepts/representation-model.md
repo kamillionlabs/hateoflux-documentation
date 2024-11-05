@@ -11,11 +11,14 @@ nav_order: 1
 {:toc}
 ---
 
-## Wrapping Resources
+## Resource Wrappers
 
 In hypermedia-driven APIs, **wrapping resources** enhances domain objects by adding hypermedia links and embedded resources. This section covers using `HalResourceWrapper`, `HalListWrapper`, `HalEmbeddedWrapper`, and `HalPageInfo` to wrap resources according to HAL standards.
 
 ### Wrapper Classes
+
+{: .important }
+As opposed to Spring's Models, wrapper classes are final and not intended for inheritance.
 
 This library provides the following wrapper classes:
 
