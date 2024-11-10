@@ -175,14 +175,7 @@ hateoflux does not require you to use any specific pagination framework like Spr
 
 - **Sorting and Filtering**: While `SortCriteria` can be used to encapsulate sorting information, you're free to define your own mechanisms for sorting and filtering data. Ensure that your sorting parameters are correctly mapped to `SortCriteria` for accurate navigation link generation.
 
-- **Link Template Compliance**: hateoflux supports URI templates in link definitions, following RFC6570 where it makes sense. The `Link.expand()` method allows you to expand URI templates with provided parameters. Here are some key points based on the method's functionality:
-
-    - **Mandatory Variables**: Placeholders like `{var}` represent mandatory variables.
-    - **Optional Query Parameters**: Placeholders like `{?var}` represent optional query parameters.
-    - **Multiple Query Parameters**: `{?var1,var2}` allows for multiple optional query parameters.
-    - **Exploded Query Parameters**: `{?var*}` can represent a list of values for a query parameter.
-
-  The `expand()` method handles the expansion of these templates, replacing placeholders with actual values or ignoring them if no value is provided (for optional parameters). Collections can be expanded as exploded query parameters, either in composite (`?var=1,2`) or non-composite (`?var=1&var=2`) form, depending on your configuration.
+- **Link Template Compliance**: hateoflux supports URI templates in link definitions (see [here](./linkbuilding.html#defining-a-uri-template))
 
 - **Handling Optional Query Parameters**: If certain query parameters are optional and may not have values, they can be safely included in your link templates. hateoflux will ignore them during expansion if no value is provided, as query parameters are optional by nature.
 

@@ -43,7 +43,7 @@ public class ShipmentDTO {
 
 ## Creating a `HalResourceWrapper` without an Embedded Resource
 
-To create a `HalResourceWrapper` for a simple order without shipment details, the wrapper is implemented as shown below. This implementation typically resides within a controller method (or better yet, in an assembler, see corresponding section about assemblers):
+To create a `HalResourceWrapper` for a simple order without shipment details, the wrapper is implemented as shown below. This implementation typically resides within a controller method (or better yet, in an [assembler](./core-concepts/assemblers.html)):
 
 ```java
 @GetMapping("/{id}")
@@ -63,7 +63,7 @@ public Mono<HalResourceWrapper<OrderDTO, Void>> getOrder(@PathVariable int id) {
 The numbered comments in the code correspond to the following explanations:
 
 1. **Endpoint Mapping:** The `@GetMapping("/{id}")` annotation maps HTTP GET requests to the `getOrder()` method. Note the generic types for `HalResourceWrapper`. The first is the main resource, which is an `OrderDTO`. Since we don't have another embedded, i.e., secondary resource, the second generic is set to `Void`.
-2. **Fetching the Order:** `orderService.getOrder(id)` is an arbitrary service call that could be reading a database or calling another service.
+2. **Fetching the Order:** `orderService.getOrder()` is an arbitrary service call that could be reading a database or calling another service.
 3. **Wrapping the Order:** The `Mono` is accessed, and the order is now wrapped. `HalResourceWrapper.wrap()` creates already a `HalResourceWrapper`. However, as it is now, no links or embedded resources are available.
 4. **Adding Links:** This method adds an arbitrary number of links. Technically, there is no limit to how many links a resource can have. However, each `Link` needs a relation that is also present exactly once. So, even if multiple `Links` are added, each must be of a different `LinkRelation`.
 5. **Creating a New Link:** With `Link.of()` a new `Link` can be created _manually_. The provided string is interpreted as being the `href` of the `Link`. In this case, it is a templated URI with `id` as a variable.
@@ -90,7 +90,10 @@ The serialized result of this `HalResourceWrapper` is as follows:
 ```
 The fields `id`, `total`, and `status` are part of the `OrderDTO` and were fetched by the `OrderService`. The links were built in the code example above. Note that each relation is the key to the link's attributes. In this case, we have two links with the relations "shipment" and "self", while both provide only an `href`.
 
-## Creating a `HalResourceWrapper` with Embedded
+## Creating a `HalResourceWrapper` with an Embedded Resource
+
+{: .note }
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle it all automatically for you!
 
 Now we want to create a `HalResourceWrapper` that doesn't just reference a shipment via a link, but also includes the whole object instead:
 
@@ -129,7 +132,7 @@ The numbered comments in the code correspond to the following explanations:
 7. **Embedding the Shipment Resource**: The `withEmbeddedResource()` adds an embedded resource to the main resource.
 8. **Wrapping Shipment Data for Embedding**: `HalEmbeddedWrapper.wrap(shipment)` transforms the `ShipmentDTO` into a `HalEmbeddedWrapper`. This wrapper prepares the shipment data for embedding within the order resource, ensuring it conforms to HAL standards.
 9. **Adding Links to the Shipment Resource**: The `withLinks()` method is now part of the `HalEmbeddedWrapper` and adds links to the embedded resource, not to the main one.
-10. **Creating a Self Link for the Shipment**: `linkTo(ShipmentController.class, c -> c.getShipment(shipment.getId()))` is part of the `SpringControllerLinkBuilder`. It constructs a link to the shipment resource by referencing the `getShipment()` method of the `ShipmentController`. This approach automatically builds the `href` based on the controllers and the method's endpoint by reading values from Spring's annotations such as `@RequestMapping`. It also automatically expands the URI templates and adds query parameters if any arguments are marked with `@RequestParam`.
+10. **Creating a Self Link for the Shipment**: `linkTo(ShipmentController.class, c -> c.getShipment(shipment.getId()))` is part of the `SpringControllerLinkBuilder`. It constructs a link to the shipment resource by referencing the `getShipment()` method of the `ShipmentController`. This approach automatically builds the `href` based on the controller's and the method's endpoint by reading values from Spring's annotations such as `@RequestMapping`. It also automatically expands the URI templates and adds query parameters if any arguments are marked with `@RequestParam`.
 11. **Defining the Relation Type for the Shipment Link**: `withRel(IanaRelation.SELF)` assigns the `self` relation type to the shipment link. This time we're using the `IanaRelation` enum, which defines a set of standardized relation types defined by [IANA](https://www.iana.org/assignments/link-relations/link-relations.xhtml).
 12. **Specifying Additional Attributes of the Link**: `withHreflang("en-US")` sets the `hreflang` attribute of the shipment link to "en-US". This attribute informs clients about the language of the linked resource, which can be useful for content negotiation and accessibility.
 
@@ -166,14 +169,17 @@ The root fields are part of the main resource, `OrderDTO`. The node `_embedded` 
 
 ## Creating a `HalListWrapper` with Pagination
 
+{: .note }
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle it all automatically for you!
+
 To not deviate too much from the previous examples, lets consider the use case, where the user wants to list all his orders. It is quite possible to implement this as `Flux`of `HalResourceWrapper<OrderDTO>`. However, we decide to create a `Mono` of `HalListWrapper<OrderDTO>`:
 
 ```java
 import static de.kamillionlabs.hateoflux.utility.SortDirection.ASCENDING;
 import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
 
-@GetMapping("")
-public Mono<HalListWrapper<OrderDTO, Void>> getOrders(@RequestParam long userId,                                   //  1
+@GetMapping
+public Mono<HalListWrapper<OrderDTO, Void>> getOrders(@RequestParam Long userId,                                   //  1
                                                       Pageable pageable,                                           //  2
                                                       ServerWebExchange exchange) {                                //  3
     Flux<OrderDTO> ordersFlux = orderService.getOrdersByUserId(userId, pageable);                                  //  4
@@ -188,7 +194,8 @@ public Mono<HalListWrapper<OrderDTO, Void>> getOrders(@RequestParam long userId,
     return ordersFlux.map(
                     order -> HalResourceWrapper.wrap(order)                                                        //  8
                             .withLinks(
-                                    Link.linkAsSelfOf("orders/" + order.getId())))
+                                    Link.linkAsSelfOf("orders/" + order.getId()))
+                                          .prependBaseUrl(exchange))
             .collectList()                                                                                         //  9
             .zipWith(totalElementsMono, (ordersList, totalElements) -> {                                           // 10
                         HalPageInfo pageInfo = HalPageInfo.assembleWithOffset(pageSize, totalElements, offset);    // 11
@@ -204,7 +211,7 @@ public Mono<HalListWrapper<OrderDTO, Void>> getOrders(@RequestParam long userId,
 ```
 The numbered comments in the code correspond to the following explanations:
 
-1. **Endpoint Definition**: The `@GetMapping("")` annotation maps HTTP GET requests to the `getOrders()` method. Note that the method returns a `Mono` of list  instead of a `Flux` of values.
+1. **Endpoint Definition**: The `@GetMapping` annotation maps HTTP GET requests to the `getOrders()` method. Note that the method returns a `Mono` of list instead of a `Flux` of values.
 
 2. **Accepting Pagination Parameters**: In cases where Spring Data is used, `Pageable` can encapsulate pagination information such as page size, page number, and sorting criteria. These details can be used to create hateoflux-specific objects that will be utilized, among other things, for link building.
 
@@ -240,7 +247,7 @@ The numbered comments in the code correspond to the following explanations:
 
 The serialized result with example payload data of this `HalListWrapper` is as follows:
 
-```
+```javascript
 {
   "page": {                                // 1
     "size": 2,
@@ -290,10 +297,10 @@ The serialized result with example payload data of this `HalListWrapper` is as f
 The json has a few interesting points worth highlighting. The numbered comments are explained as follows:
 
 1. **Pagination Metadata**: The `"page"` block contains pagination details provided by `withPageInfo()`. It includes fields such as:
-    - `size`: Number of items per page (here, 2).
-    - `totalElements`: Total number of items available (15).
-    - `totalPages`: Total number of pages (8).
-    - `number`: Current page index (starting from 0).
+   - `size`: Number of items per page (here, 2).
+   - `totalElements`: Total number of items available (15).
+   - `totalPages`: Total number of pages (8).
+   - `number`: Current page index (starting from 0).
 
    These fields mirror those in a HAL JSON response from a service using Spring HATEOAS, ensuring consistency in pagination representation.
 
@@ -302,8 +309,203 @@ The json has a few interesting points worth highlighting. The numbered comments 
 3. **Naming of Embedded Resources**: The list of resources within `_embedded` must have a key that names the collection. In this example, the resources are under `"orderDTOs"`, which is derived from the class name `OrderDTO` by converting it to lowercase and adding an "s" to pluralize. Since we did not use the `@Relation` annotation to specify a custom relation name, the default naming convention applies.
 
 4. **Hypermedia Links and Navigation**: The `_links` section includes hypermedia links generated by the `deriveNavigationLinks()` method. It automatically created the `"next"`, `"self"`, and `"last"` links. The `"prev"` and `"first"` links were omitted because they are not applicable:
-    - The `number` field indicates we are on page `0`, the first page, so there is no previous page.
-    - The `"first"` link is redundant since `"self"` already points to the first page.
-    - Each link's `href` includes query parameters such as `userId`, `page`, `size`, and `sort`, reflecting the current request parameters and pagination state.
+   - The `number` field indicates we are on page `0`, the first page, so there is no previous page.
+   - The `"first"` link is redundant since `"self"` already points to the first page.
+   - Each link's `href` includes query parameters such as `userId`, `page`, `size`, and `sort`, reflecting the current request parameters and pagination state.
 
    The inclusion of sorting parameters (e.g., `sort=id,desc`) is optional but provides clients with complete context for the data they are viewing.
+
+## Using an Assembler to Create a `HalListWrapper` With Embedded Resources
+Now let's combine all the above to construct:
+* A list of resources
+* All resources have an embedded
+* The list is paginated
+
+On top of that we'll use an assembler i.e. we will implement the `ReactiveEmbeddingHalWrapperAssembler`. As business case we will stay on topic and return a paginated list of orders, where each order also specifies shipment details. First of all, we need said implementation of the assembler:
+
+```java
+@Component
+public class OrderAssembler implements ReactiveEmbeddingHalWrapperAssembler<OrderDTO, ShipmentDTO> {        //1
+
+    @Override
+    public Class<OrderDTO> getResourceTClass() {                                                            //2
+        return OrderDTO.class;                                                                              //3
+    }
+
+    @Override
+    public Link buildSelfLinkForResource(OrderDTO resourceToWrap, ServerWebExchange exchange) {             //4
+        return Link.of("order/" + resourceToWrap.getId())                                                   //5
+                .prependBaseUrl(exchange);                                                                  //6
+    }
+
+    @Override
+    public Link buildSelfLinkForEmbedded(ShipmentDTO embedded, ServerWebExchange exchange) {                //7
+        return Link.of("shipment/" + embedded.getId())                                                     
+                .prependBaseUrl(exchange)                                                                   
+                .withHreflang("en-US");                                                                     
+    }
+
+    @Override
+    public Link buildSelfLinkForResourceList(ServerWebExchange exchange) {                                  //8
+        MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();                 //9
+        return Link.of("orders{?userId,someDifferentFilter}")                                               //10
+                .expand(queryParams)                                                                        
+                .prependBaseUrl(exchange);
+    }
+}
+```
+The numbered comments in the code correspond to the following explanations:
+
+1. **Implementing the Interface**: The `OrderAssembler` implements the `ReactiveEmbeddingHalWrapperAssembler` with the generic types `OrderDTO` and `ShipmentDTO`. Similarly to how the generics describe the main and embedded resource, the generics in assemblers follow the same logic.
+
+2. **The Method `getResourceTClass()`**: It is a technical necessity. It is required so empty lists can be named correctly, as the name for lists is always derived from the class type. The `@Relation` annotation is still honored (e.g., `OrderDTO` becomes `orders`).
+
+3. **Implementation of `getResourceTClass()`**: The implementation is also trivial as it simply returns a `ResourceT` which the assembler already specifies.
+
+4. **The Method `buildSelfLinkForResource()`**: Defines how the self link for the (main) resource should look. In this case, the self link is for any `OrderDTO` that is wrapped by the assembler. This applies only for a **single** resource.
+
+5. **Implementation of `buildSelfLinkForResource()`**: The link is manually built here (as opposed to building it with `SpringControllerLinkBuilder`). The `resourceToWrap` is a given resource that the assembler wraps when prompted to. Note that the relation is automatically set, i.e., overwritten to "self". This means that setting the relation here has no effect.
+
+6. **Prepending the base URL**: The `ServerWebExchange` is injected automatically into the controller by Spring, if specified, and holds various information about the HTTP request that a controller received. `Link.prependBaseUrl()` extracts the base URL (i.e., protocol, host, and port) from the `ServerWebExchange` and prepends it to the specified `href`.
+
+7. **Implementation of `buildSelfLinkForEmbedded()`**: The method defines how the self link for the embedded resource should look. Technically, the embedded resource is also wrapped. In this case, the self link is for any `ShipmentDTO` that is embedded in an `OrderDTO` by the assembler. The base URL and an additional attribute `hreflang` are also added to the link.
+
+8. **The Method `buildSelfLinkForResourceList`**: Defines the self link for a **list** of resources, i.e., a list of `OrderDTO`s. In contrast to `buildSelfLinkForResource`, which builds the self link for a single resource, this method does not provide the elements. Generally, this shouldn't be required in the first place, as the self link shouldn't contain information about each and every list.
+
+9. **Accessing Query Parameters**: Among the other things that the `ServerWebExchange` provides are the query parameters used. By accessing them, we can construct the URL that was called to trigger the controller.
+
+10. **Defining the Link**: Since we know that the controller makes use of query parameters, we need to specify them in the URL (it depends on the controller implementation, of course). The URL should correspond to whatever was called to trigger the controller. Note that we didn't use the `SpringControllerLinkBuilder` because `linkTo` is type-safe and expects exact types, whereas the `ServerWebExchange` only provides a `MultiValueMap<String, String>` that bundles together all variables. The link is then expanded and prepended with the base URL.
+
+Now that we have the assembler, we can start using it in the `OrderController`:
+
+```java
+import static de.kamillionlabs.hateoflux.utility.SortDirection.ASCENDING;
+import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
+
+@RestController
+@RequestMapping("/orders")
+public class OrderController {
+
+    @Autowired
+    private OrderAssembler orderAssembler;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private ShipmentService shipmentService;
+
+    @GetMapping
+    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrders(@RequestParam(required = false) Long userId,                 // 1
+                                                                 Pageable pageable,                                           // 2
+                                                                 ServerWebExchange exchange) {                                // 3
+        
+        Flux<Pair<OrderDTO, ShipmentDTO>> ordersWithShipment = orderService.getOrders(userId, pageable)                       // 4
+                .flatMap(order ->                                                                                             
+                        shipmentService.getShipmentByOrderId(order.getId())                                                   
+                                .map(shipment -> Pair.of(order, shipment)));                                                  
+        Mono<Long> totalElements = orderService.countAllOrders(userId);                                                       // 5
+                                                                                                                               
+        int pageSize = pageable.getPageSize();                                                                                // 6
+        long offset = pageable.getOffset();                                                                                   
+        List<SortCriteria> sortCriteria = pageable.getSort().get()                                                            
+                .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))
+                .toList();
+        return orderAssembler.wrapInListWrapper(ordersWithShipment, totalElements, pageSize, offset, sortCriteria, exchange); // 7
+    }
+}
+```
+
+The numbered comments in the code correspond to the following explanations:
+
+1. **Endpoint Definition**: The `@GetMapping` annotation maps HTTP GET requests to the `getOrders()` method. Note that the method returns a `Mono` of a `HalListWrapper` with the same generics the assembler was configured with.
+
+2. **Using `Pageable`**: Spring Data's `Pageable` can be very useful. hateoflux itself does not use Spring Data and hence has no access to it, and therefore there is no automatic conversion provided. However, below an example is given.
+
+3. **Injecting a `ServerWebExchange`**: Spring automatically injects a `ServerWebExchange` if provided in the method signature of a REST controller. This can be useful to the assembler in order to build links.
+
+4. **Getting Data**: The services `orderService` and `shipmentService` are arbitrary services that could be reading from a database or calling another service.
+
+5. **Get the Number of Total Elements**: Since generally in WebFlux we work with `Flux` and not `Page` instances, another query is required to get the total number of elements.
+
+6. **Converting `Pageable` to a List of `SortCriteria`**: We read the data provided by Spring Data's `Pageable` and convert it to a list of hateoflux's `SortCriteria`.
+
+7. **Create the Wrapper**: Finally, wrap all individual main and embedded resources, add pagination, and put them in a `HalListWrapper`.
+
+The serialized result with example payload data of this `HalListWrapper` is as follows:
+
+```javascript
+{
+  "page": {
+    "size": 2,
+    "totalElements": 6,
+    "totalPages": 3,
+    "number": 0
+  },
+  "_embedded": {
+    "orderDTOs": [
+      {
+        "id": 1234,
+        "userId": 37,
+        "total": 99.99,
+        "status": "Delivered",
+        "_embedded": {
+          "shipment": {
+            "id": 127,
+            "carrier": "UPS",
+            "trackingNumber": "154-ASD-1238724",
+            "status": "Completed",
+            "_links": {
+              "self": {
+                "href": "http://172.24.80.1:8080/shipment/127",
+                "hreflang": "en-US"
+              }
+            }
+          }
+        },
+        "_links": {
+          "self": {
+            "href": "http://172.24.80.1:8080/order/1234"
+          }
+        }
+      },
+      {
+        "id": 1057,
+        "userId": 37,
+        "total": 72.48,
+        "status": "Delivered",
+        "_embedded": {
+          "shipment": {
+            "id": 105,
+            "carrier": "UPS",
+            "trackingNumber": "354-KEL-7284724",
+            "status": "Completed",
+            "_links": {
+              "self": {
+                "href": "http://172.24.80.1:8080/shipments/105",
+                "hreflang": "en-US"
+              }
+            }
+          }
+        },
+        "_links": {
+          "self": {
+            "href": "http://172.24.80.1:8080/order/1057"
+          }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "next": {
+      "href": "http://172.24.80.1:8080/orders?userId=37?page=1&size=2&sort=id,asc"
+    },
+    "self": {
+      "href": "http://172.24.80.1:8080/orders?userId=37?page=0&size=2&sort=id,asc"
+    },
+    "last": {
+      "href": "http://172.24.80.1:8080/orders?userId=37?page=2&size=2&sort=id,asc"
+    }
+  }
+}
+```

@@ -162,7 +162,7 @@ As demonstrated, adding an embedded resource (or a list of them if required) is 
 
 _**See also:**_
 * [Fundamentals about assembler](./core-concepts/assemblers.html)
-* [TODO: Explained full example implementation of an assembler](./MISSING.html)
+* [Explained full example implementation of an assembler](./cookbook.html#using-an-assembler-to-create-a-hallistwrapper-with-embedded-resources)
 
 ## Pagination Handling
 ### Spring HATEOAS

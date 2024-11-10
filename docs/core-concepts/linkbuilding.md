@@ -70,28 +70,41 @@ hateoflux supports URI templates, enabling the definition of dynamic URLs with p
 A URI template can be defined as follows:
 
 ```java 
-Link templatedLink = Link.of("/orders{?status,page,size}");
+Link templatedLink = Link.of("/orders/{userId}/shipments{?status,page,size}");
 ```
+
+hateoflux supports URI templates following [RFC6570](https://www.rfc-editor.org/rfc/rfc6570) where it makes sense. The `UriExpander` or even easier, the `Link.expand()` method allows you to expand URI templates with provided parameters. The following are the supported formats:
+
+ * **Mandatory Variables**: Placeholders like `{var}` represent mandatory variables and generally used for path variables.
+ * **Optional Query Parameters**: Placeholders like `{?var}` represent optional query parameters.
+ * **Multiple Query Parameters**: `{?var1,var2}` allows for multiple optional query parameters.
+ * **Exploded Query Parameters**: `{?var*}` can represent a list of values for a query parameter.
+
+The `expand()` method handles the expansion of these templates, replacing placeholders with actual values or ignoring them if no value is provided (for optional parameters). Collections can be expanded as exploded query parameters, either in composite (`?var=1,2`) or non-composite (`?var=1&var=2`) form, depending on your configuration.
+
 ### Expanding URI Templates
-The `expand()` method can expand the URI template using an array of values (varargs) or a map of parameters:
+The `expand()` method can expand the URI template using an array of values (varargs) or a map of parameters. Reusing the `templatedLink` from above, an example expansion could look like this:
 
 ```java
 Map<String, Object> parameters = Map.of(
+    "userId", "123456789"
     "status", "shipped",
-    "page", 2,
-    "size", 50
+    "page", 0,
+    "size", 10
 );
 
 Link expandedLink = templatedLink.expand(parameters);
 
 System.out.println(expandedLink.getHref()); 
 
-// Outputs: /orders?status=shipped&page=2&size=50
+// Outputs: /orders/123456789/shipments?status=shipped&page=0&size=10
 ```
 
 ### Handling Optional and Exploded Parameters
 * **Optional Parameters**: Denoted by `{?param}`, optional parameters are omitted if no value is provided.
-* **Exploded Parameters**: Denoted by `{?param*}`, these are used for lists or arrays of values.
+* **Exploded Parameters**: Denoted by `{?param*}`, these are used for lists or arrays of values. For expansion, they always need to be in a `List`.
+
+The following is another example using exploded variables:
 
 ```java
 Map<String, Object> params = Map.of(
