@@ -11,6 +11,10 @@ nav_order: 5
 {:toc}
 ---
 
+{: .important }
+Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the service (e.g. against these [endpoints](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/OrderController.java)) or check the examples directly in the [CookbookExamplesTest](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/test/java/de/kamillionlabs/hateofluxdemos/CookbookExamplesTest.java) unit test.
+
+<br>
 Let's define the following two DTO classes that are going to be used in further examples for creating `HalResourceWrapper`, `HalEmbeddedWrapper` and `HalListWrapper`:
 
 ```java
