@@ -46,17 +46,17 @@ public class ShipmentDTO {
 To create a `HalResourceWrapper` for a simple order without shipment details, the wrapper is implemented as shown below. This implementation typically resides within a controller method (or better yet, in an [assembler](./core-concepts/assemblers.html)):
 
 ```java
-@GetMapping("/{id}")
-public Mono<HalResourceWrapper<OrderDTO, Void>> getOrder(@PathVariable int id) {    // 1
+@GetMapping("/{orderId}")
+public Mono<HalResourceWrapper<OrderDTO, Void>> getOrder(@PathVariable int orderId) {    // 1
 
-    Mono<OrderDTO> orderMono = orderService.getOrder(id);                           // 2
+    Mono<OrderDTO> orderMono = orderService.getOrder(orderId);                           // 2
 
-    return orderMono.map(order -> HalResourceWrapper.wrap(order)                    // 3
-            .withLinks(                                                             // 4
-                    Link.of("orders/{id}/shipment")                                 // 5
-                            .expand(id)                                             // 6
-                            .withRel("shipment"),                                   // 7
-                    Link.linkAsSelfOf("orders/" + id)                               // 8
+    return orderMono.map(order -> HalResourceWrapper.wrap(order)                         // 3
+            .withLinks(                                                                  // 4
+                    Link.of("orders/{orderId}/shipment")                                 // 5
+                            .expand(orderId)                                             // 6
+                            .withRel("shipment"),                                        // 7
+                    Link.linkAsSelfOf("orders/" + orderId)                               // 8
             ));
 }
 ```
@@ -74,18 +74,18 @@ The numbered comments in the code correspond to the following explanations:
 The serialized result of this `HalResourceWrapper` is as follows:
 ```javascript
 {
-  "id": 12345,
-  "userId": 37,
-  "total": 99.99,
-  "status": "Processing",
-  "_links": {
-    "shipment": {
-      "href": "orders/12345/shipment"
-    },
-    "self": {
-      "href": "orders/12345"
-    }
-  }
+   "id": 1234,
+   "userId": 37,
+   "total": 99.99,
+   "status": "Processing",
+   "_links": {
+      "shipment": {
+         "href": "orders/1234/shipment"
+      },
+      "self": {
+         "href": "orders/1234"
+      }
+   }
 }
 ```
 The fields `id`, `total`, and `status` are part of the `OrderDTO` and were fetched by the `OrderService`. The links were built in the code example above. Note that each relation is the key to the link's attributes. In this case, we have two links with the relations "shipment" and "self", while both provide only an `href`.
@@ -98,29 +98,25 @@ The code might seem a bit lengthy; however, if you choose to use assemblers, the
 Now we want to create a `HalResourceWrapper` that doesn't just reference a shipment via a link, but also includes the whole object instead:
 
 ```java
-import static de.kamillionlabs.hateoflux.linkbuilder.SpringControllerLinkBuilder.linkTo;
-
-@GetMapping("/{id}")
-public Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> getOrderWithShipment(@PathVariable int orderId) {           //  1
-
-    Mono<OrderDTO> orderMono = orderService.getOrder(orderId);                                                     //  2
-    Mono<ShipmentDTO> shipmentMono = shipmentService.getShipmentByOrderId(orderId);                                //  3
-
+@GetMapping("/order-with-embedded/{orderId}")
+public Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> getOrderWithShipment(@PathVariable int orderId) {             //  1
+    Mono<OrderDTO> orderMono = orderService.getOrder(orderId);                                                       //  2
+    Mono<ShipmentDTO> shipmentMono = shipmentService.getShipmentByOrderId(orderId);                                  //  3
     return orderMono.zipWith(shipmentMono, (order, shipment) ->
-            HalResourceWrapper.wrap(order)                                                                         //  4
-                    .withLinks(                                                                                    //  5
-                            Link.linkAsSelfOf("orders/" + orderId))                                                //  6
-                    .withEmbeddedResource(                                                                         //  7
-                            HalEmbeddedWrapper.wrap(shipment)                                                      //  8
-                                    .withLinks(                                                                    //  9
-                                            linkTo(ShipmentController.class, c -> c.getShipment(shipment.getId())) // 10
-                                                    .withRel(IanaRelation.SELF)                                    // 11
-                                                    .withHreflang("en-US")                                         // 12
+            HalResourceWrapper.wrap(order)                                                                           //  4
+                    .withLinks(                                                                                      //  5
+                            Link.linkAsSelfOf("orders/" + orderId))                                                  //  6
+                    .withEmbeddedResource(                                                                           //  7
+                            HalEmbeddedWrapper.wrap(shipment)                                                        //  8
+                                    .withLinks(                                                                      //  9
+                                            linkTo(ShipmentController.class, c -> c.getShipment(shipment.getId()))   // 10
+                                                    .withRel(IanaRelation.SELF)                                      // 11
+                                                    .withHreflang("en-US")                                           // 12
                                     )
                     )
     );
-}
 ```
+
 The numbered comments in the code correspond to the following explanations:
 
 1. **Endpoint Definition**: The `@GetMapping("/{id}")` annotation maps HTTP GET requests containing an order ID to the `getOrderWithShipment()` method. Note the generic types for `HalResourceWrapper`. The first is the main resource, which is an `OrderDTO` as before. However, since we now have an embedded resource, the second generic is set to `ShipmentDTO`.
@@ -137,22 +133,21 @@ The numbered comments in the code correspond to the following explanations:
 12. **Specifying Additional Attributes of the Link**: `withHreflang("en-US")` sets the `hreflang` attribute of the shipment link to "en-US". This attribute informs clients about the language of the linked resource, which can be useful for content negotiation and accessibility.
 
 The serialized result of this `HalResourceWrapper` is as follows:
-
 ```javascript
 {
-  "id": 12345,
+  "id": 1234,
   "userId": 37,
   "total": 99.99,
   "status": "Processing",
   "_embedded": {
     "shipment": {    // notice the name is not "shipmentDTO"
-      "id": 98765,
+      "id": 127,
       "carrier": "UPS",
-      "trackingNumber": "1Z999AA10123456784",
-      "status": "In Transit",
+      "trackingNumber": "154-ASD-1238724",
+      "status": "Completed",
       "_links": {
         "self": {
-          "href": "/shipments/98765",
+          "href": "/shipment/127",
           "hreflang": "en-US"
         }
       }
@@ -160,11 +155,12 @@ The serialized result of this `HalResourceWrapper` is as follows:
   },
   "_links": {
     "self": {
-      "href": "orders/12345"
+      "href": "orders/1234"
     }
   }
 }
 ```
+
 The root fields are part of the main resource, `OrderDTO`. The node `_embedded` includes the embedded resource, `ShipmentDTO`. Notice how the name of the object is not "shipmentDTO" but "shipment". This is because the `ShipmentDTO` class has an `@Relation` annotation that defines how the class name should be written when it is serialized. Under `_links`, we can also see the two attributes that we added to the self link. One is the expanded `href` that the `SpringControllerLinkBuilder` extracted from the controller class and method, and the other is the `hreflang` we added.
 
 ## Creating a `HalListWrapper` with Pagination
@@ -178,33 +174,33 @@ To not deviate too much from the previous examples, lets consider the use case, 
 import static de.kamillionlabs.hateoflux.utility.SortDirection.ASCENDING;
 import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
 
-@GetMapping
-public Mono<HalListWrapper<OrderDTO, Void>> getOrders(@RequestParam Long userId,                                   //  1
-                                                      Pageable pageable,                                           //  2
-                                                      ServerWebExchange exchange) {                                //  3
-    Flux<OrderDTO> ordersFlux = orderService.getOrdersByUserId(userId, pageable);                                  //  4
-    Mono<Long> totalElementsMono = orderService.countAllOrdersByUserId(userId);                                    //  5
+@GetMapping("/orders-with-pagination-manual")
+public Mono<HalListWrapper<OrderDTO, Void>> getOrdersManualBuilt(@RequestParam Long userId,                       //  1
+                                                                 Pageable pageable,                               //  2
+                                                                 ServerWebExchange exchange) {                    //  3
+    Flux<OrderDTO> ordersFlux = orderService.getOrdersByUserId(userId, pageable);                                 //  4
+    Mono<Long> totalElementsMono = orderService.countAllOrdersByUserId(userId);                                   //  5
 
-    int pageSize = pageable.getPageSize();                                                                          
+    int pageSize = pageable.getPageSize();
     long offset = pageable.getOffset();
-    List<SortCriteria> sortCriteria = pageable.getSort().get()                                                     //  6
-            .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))   //  7
+    List<SortCriteria> sortCriteria = pageable.getSort().get()                                                    //  6
+            .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))  //  7
             .toList();
 
     return ordersFlux.map(
-                    order -> HalResourceWrapper.wrap(order)                                                        //  8
+                    order -> HalResourceWrapper.wrap(order)                                                       //  8
                             .withLinks(
-                                    Link.linkAsSelfOf("orders/" + order.getId()))
-                                          .prependBaseUrl(exchange))
-            .collectList()                                                                                         //  9
-            .zipWith(totalElementsMono, (ordersList, totalElements) -> {                                           // 10
-                        HalPageInfo pageInfo = HalPageInfo.assembleWithOffset(pageSize, totalElements, offset);    // 11
-                        return HalListWrapper.wrap(ordersList)                                                     // 12
-                                .withLinks(Link.of("orders{?userId,someDifferentFilter}")                          // 13
-                                        .expand(userId)                                                            // 14
-                                        .prependBaseUrl(exchange)                                                  // 15
-                                        .deriveNavigationLinks(pageInfo, sortCriteria))                            // 16
-                                .withPageInfo(pageInfo);                                                           // 17
+                                    Link.linkAsSelfOf("orders/" + order.getId())
+                                            .prependBaseUrl(exchange)))
+            .collectList()                                                                                        //  9
+            .zipWith(totalElementsMono,(ordersList, totalElements) -> {                                           // 10
+                        HalPageInfo pageInfo = HalPageInfo.assembleWithOffset(pageSize, totalElements, offset);   // 11
+                        return HalListWrapper.wrap(ordersList)                                                    // 12
+                                .withLinks(Link.of("orders{?userId,someDifferentFilter}")                         // 13
+                                        .expand(userId)                                                           // 14
+                                        .prependBaseUrl(exchange)                                                 // 15
+                                        .deriveNavigationLinks(pageInfo, sortCriteria))                           // 16
+                                .withPageInfo(pageInfo);                                                          // 17
                     }
             );
 }
@@ -247,41 +243,42 @@ The numbered comments in the code correspond to the following explanations:
 
 The serialized result with example payload data of this `HalListWrapper` is as follows:
 
+
 ```javascript
 {
-  "page": {                                // 1
+  "page": {                                                    //1
     "size": 2,
-    "totalElements": 15,
-    "totalPages": 8,
+    "totalElements": 6,
+    "totalPages": 3,
     "number": 0
   },
-  "_embedded": {                           // 2
-    "orderDTOs": [                         // 3
+  "_embedded": {                                               //2
+    "orderDTOs": [                                             //3
       {
-        "id": 12345,
+        "id": 1234,
         "userId": 37,
         "total": 99.99,
         "status": "Processing",
         "_links": {
           "self": {
-            "href": "orders/12345"
+            "href": "http://myservice:8080/orders/1234"
           }
         }
       },
       {
-        "id": 10587,
+        "id": 1057,
         "userId": 37,
         "total": 72.48,
         "status": "Delivered",
         "_links": {
           "self": {
-            "href": "orders/10587"
+            "href": "http://myservice:8080/orders/1057"
           }
         }
       }
     ]
   },
-  "_links": {                              // 4
+  "_links": {                                                 //4
     "next": {
       "href": "http://myservice:8080/orders?userId=37?page=1&size=2&sort=id,desc"
     },
@@ -289,7 +286,7 @@ The serialized result with example payload data of this `HalListWrapper` is as f
       "href": "http://myservice:8080/orders?userId=37?page=0&size=2&sort=id,desc"
     },
     "last": {
-      "href": "http://myservice:8080/orders?userId=37?page=7&size=2&sort=id,desc"
+      "href": "http://myservice:8080/orders?userId=37?page=2&size=2&sort=id,desc"
     }
   }
 }
@@ -325,7 +322,7 @@ On top of that we'll use an assembler i.e. we will implement the `ReactiveEmbedd
 
 ```java
 @Component
-public class OrderAssembler implements ReactiveEmbeddingHalWrapperAssembler<OrderDTO, ShipmentDTO> {        //1
+public class OrderAssembler implements EmbeddingHalWrapperAssembler<OrderDTO, ShipmentDTO> {                //1
 
     @Override
     public Class<OrderDTO> getResourceTClass() {                                                            //2
@@ -348,7 +345,7 @@ public class OrderAssembler implements ReactiveEmbeddingHalWrapperAssembler<Orde
     @Override
     public Link buildSelfLinkForResourceList(ServerWebExchange exchange) {                                  //8
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();                 //9
-        return Link.of("orders{?userId,someDifferentFilter}")                                               //10
+        return Link.of("order{?userId,someDifferentFilter}")                                               //10
                 .expand(queryParams)                                                                        
                 .prependBaseUrl(exchange);
     }
@@ -356,7 +353,7 @@ public class OrderAssembler implements ReactiveEmbeddingHalWrapperAssembler<Orde
 ```
 The numbered comments in the code correspond to the following explanations:
 
-1. **Implementing the Interface**: The `OrderAssembler` implements the `ReactiveEmbeddingHalWrapperAssembler` with the generic types `OrderDTO` and `ShipmentDTO`. Similarly to how the generics describe the main and embedded resource, the generics in assemblers follow the same logic.
+1. **Implementing the Interface**: The `OrderAssembler` implements the `EmbeddingHalWrapperAssembler` with the generic types `OrderDTO` and `ShipmentDTO`. Similarly to how the generics describe the main and embedded resource, the generics in assemblers follow the same logic.
 
 2. **The Method `getResourceTClass()`**: It is a technical necessity. It is required so empty lists can be named correctly, as the name for lists is always derived from the class type. The `@Relation` annotation is still honored (e.g., `OrderDTO` becomes `orders`).
 
@@ -395,23 +392,23 @@ public class OrderController {
     @Autowired
     private ShipmentService shipmentService;
 
-    @GetMapping
-    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrders(@RequestParam(required = false) Long userId,                 // 1
-                                                                 Pageable pageable,                                           // 2
-                                                                 ServerWebExchange exchange) {                                // 3
+    @GetMapping("/orders-using-assembler")
+    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrdersUsingAssembler(@RequestParam(required = false) Long userId,                 // 1
+                                                                               Pageable pageable,                                           // 2
+                                                                               ServerWebExchange exchange) {                                // 3
         
-        Flux<Pair<OrderDTO, ShipmentDTO>> ordersWithShipment = orderService.getOrders(userId, pageable)                       // 4
+        Flux<Pair<OrderDTO, ShipmentDTO>> ordersWithShipment = orderService.getOrders(userId, pageable)                                     // 4
                 .flatMap(order ->                                                                                             
                         shipmentService.getShipmentByOrderId(order.getId())                                                   
                                 .map(shipment -> Pair.of(order, shipment)));                                                  
-        Mono<Long> totalElements = orderService.countAllOrders(userId);                                                       // 5
+        Mono<Long> totalElements = orderService.countAllOrders(userId);                                                                     // 5
                                                                                                                                
-        int pageSize = pageable.getPageSize();                                                                                // 6
+        int pageSize = pageable.getPageSize();                                                                                              // 6
         long offset = pageable.getOffset();                                                                                   
         List<SortCriteria> sortCriteria = pageable.getSort().get()                                                            
                 .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))
                 .toList();
-        return orderAssembler.wrapInListWrapper(ordersWithShipment, totalElements, pageSize, offset, sortCriteria, exchange); // 7
+        return orderAssembler.wrapInListWrapper(ordersWithShipment, totalElements, pageSize, offset, sortCriteria, exchange);               // 7
     }
 }
 ```
@@ -436,76 +433,76 @@ The serialized result with example payload data of this `HalListWrapper` is as f
 
 ```javascript
 {
-  "page": {
-    "size": 2,
-    "totalElements": 6,
-    "totalPages": 3,
-    "number": 0
-  },
-  "_embedded": {
-    "orderDTOs": [
-      {
-        "id": 1234,
-        "userId": 37,
-        "total": 99.99,
-        "status": "Delivered",
-        "_embedded": {
-          "shipment": {
-            "id": 127,
-            "carrier": "UPS",
-            "trackingNumber": "154-ASD-1238724",
-            "status": "Completed",
+   "page": {
+      "size": 2,
+      "totalElements": 6,
+      "totalPages": 3,
+      "number": 0
+   },
+   "_embedded": {
+      "orderDTOs": [
+         {
+            "id": 1234,
+            "userId": 37,
+            "total": 99.99,
+            "status": "Processing",
+            "_embedded": {
+               "shipment": {
+                  "id": 127,
+                  "carrier": "UPS",
+                  "trackingNumber": "154-ASD-1238724",
+                  "status": "Completed",
+                  "_links": {
+                     "self": {
+                        "href": "http://myservice:8080/shipment/127",
+                        "hreflang": "en-US"
+                     }
+                  }
+               }
+            },
             "_links": {
-              "self": {
-                "href": "http://172.24.80.1:8080/shipment/127",
-                "hreflang": "en-US"
-              }
+               "self": {
+                  "href": "http://myservice:8080/order/1234"
+               }
             }
-          }
-        },
-        "_links": {
-          "self": {
-            "href": "http://172.24.80.1:8080/order/1234"
-          }
-        }
+         },
+         {
+            "id": 1057,
+            "userId": 37,
+            "total": 72.48,
+            "status": "Delivered",
+            "_embedded": {
+               "shipment": {
+                  "id": 105,
+                  "carrier": "UPS",
+                  "trackingNumber": "154-ASD-1284724",
+                  "status": "Completed",
+                  "_links": {
+                     "self": {
+                        "href": "http://myservice:8080/shipment/105",
+                        "hreflang": "en-US"
+                     }
+                  }
+               }
+            },
+            "_links": {
+               "self": {
+                  "href": "http://myservice:8080/order/1057"
+               }
+            }
+         }
+      ]
+   },
+   "_links": {
+      "next": {
+         "href": "http://myservice:8080/order?userId=37?page=1&size=2&sort=id,asc"
       },
-      {
-        "id": 1057,
-        "userId": 37,
-        "total": 72.48,
-        "status": "Delivered",
-        "_embedded": {
-          "shipment": {
-            "id": 105,
-            "carrier": "UPS",
-            "trackingNumber": "354-KEL-7284724",
-            "status": "Completed",
-            "_links": {
-              "self": {
-                "href": "http://172.24.80.1:8080/shipments/105",
-                "hreflang": "en-US"
-              }
-            }
-          }
-        },
-        "_links": {
-          "self": {
-            "href": "http://172.24.80.1:8080/order/1057"
-          }
-        }
+      "self": {
+         "href": "http://myservice:8080/order?userId=37?page=0&size=2&sort=id,asc"
+      },
+      "last": {
+         "href": "http://myservice:8080/order?userId=37?page=2&size=2&sort=id,asc"
       }
-    ]
-  },
-  "_links": {
-    "next": {
-      "href": "http://172.24.80.1:8080/orders?userId=37?page=1&size=2&sort=id,asc"
-    },
-    "self": {
-      "href": "http://172.24.80.1:8080/orders?userId=37?page=0&size=2&sort=id,asc"
-    },
-    "last": {
-      "href": "http://172.24.80.1:8080/orders?userId=37?page=2&size=2&sort=id,asc"
-    }
-  }
+   }
 }
 ```
