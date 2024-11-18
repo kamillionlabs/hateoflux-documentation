@@ -12,10 +12,10 @@ nav_order: 5
 ---
 
 {: .important }
-Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the service (e.g. against these [endpoints](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/OrderController.java)) or check the examples directly in the [CookbookExamplesTest](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/test/java/de/kamillionlabs/hateofluxdemos/CookbookExamplesTest.java) unit test.
+Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the service (e.g. against endpoints for [manually built wrappers](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/ManualOrderController.java) or those [built by an assembler](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/AssembledOrderController.java)) or check the examples directly in the [CookbookExamplesTest](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/test/java/de/kamillionlabs/hateofluxdemos/CookbookExamplesTest.java) unit test.
 
 <br>
-Let's define the following two DTO classes that are going to be used in further examples for creating `HalResourceWrapper`, `HalEmbeddedWrapper` and `HalListWrapper`:
+Let's first define the following two DTO classes that are going to be used in further examples for creating `HalResourceWrapper`, `HalEmbeddedWrapper` and `HalListWrapper`:
 
 ```java
 import lombok.Data;
@@ -50,7 +50,7 @@ public class ShipmentDTO {
 To create a `HalResourceWrapper` for a simple order without shipment details, the wrapper is implemented as shown below. This implementation typically resides within a controller method (or better yet, in an [assembler](./core-concepts/assemblers.html)):
 
 ```java
-@GetMapping("/{orderId}")
+@GetMapping("/order-no-embedded/{orderId}")
 public Mono<HalResourceWrapper<OrderDTO, Void>> getOrder(@PathVariable int orderId) {    // 1
 
     Mono<OrderDTO> orderMono = orderService.getOrder(orderId);                           // 2
@@ -75,7 +75,6 @@ The numbered comments in the code correspond to the following explanations:
 7. **Defining the Relation:** `withRel()` assigns a relation name to the link, indicating its purpose in the context of the order resource.
 8. **Self Link:** `withLinks()` in line 4 accepts an array of links (varargs). `Link.linkAsSelfOf("orders/" + id)` generates a `Link` with the relation `SELF`, i.e., a self-referential link. This method is unique of its kind as it sets the relation and an `href` simultaneously.
 
-The serialized result of this `HalResourceWrapper` is as follows:
 ```javascript
 {
    "id": 1234,
@@ -92,12 +91,13 @@ The serialized result of this `HalResourceWrapper` is as follows:
    }
 }
 ```
+
 The fields `id`, `total`, and `status` are part of the `OrderDTO` and were fetched by the `OrderService`. The links were built in the code example above. Note that each relation is the key to the link's attributes. In this case, we have two links with the relations "shipment" and "self", while both provide only an `href`.
 
 ## Creating a `HalResourceWrapper` with an Embedded Resource
 
 {: .note }
-The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle it all automatically for you!
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
 
 Now we want to create a `HalResourceWrapper` that doesn't just reference a shipment via a link, but also includes the whole object instead:
 
@@ -119,6 +119,7 @@ public Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> getOrderWithShipment(@Pat
                                     )
                     )
     );
+}
 ```
 
 The numbered comments in the code correspond to the following explanations:
@@ -170,7 +171,7 @@ The root fields are part of the main resource, `OrderDTO`. The node `_embedded` 
 ## Creating a `HalListWrapper` with Pagination
 
 {: .note }
-The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle it all automatically for you!
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
 
 To not deviate too much from the previous examples, lets consider the use case, where the user wants to list all his orders. It is quite possible to implement this as `Flux`of `HalResourceWrapper<OrderDTO>`. However, we decide to create a `Mono` of `HalListWrapper<OrderDTO>`:
 
@@ -316,10 +317,14 @@ The json has a few interesting points worth highlighting. The numbered comments 
 
    The inclusion of sorting parameters (e.g., `sort=id,desc`) is optional but provides clients with complete context for the data they are viewing.
 
-## Using an Assembler to Create a `HalListWrapper` With Embedded Resources
+## Using an Assembler to Create a `HalListWrapper` For Resources With an Embedded Resource
+
+{: .note }
+Even though this example creates a `HalListWrapper` for resources with an embedded resource, the assembler can generate different types of wrappers: either a single `HalResourceWrapper` or a `HalListWrapper` with or without pagination. The primary effort lies in implementing the assembler; using it is a one-liner.
+
 Now let's combine all the above to construct:
 * A list of resources
-* All resources have an embedded
+* All resources have an embedded resource
 * The list is paginated
 
 On top of that we'll use an assembler i.e. we will implement the `ReactiveEmbeddingHalWrapperAssembler`. As business case we will stay on topic and return a paginated list of orders, where each order also specifies shipment details. First of all, we need said implementation of the assembler:
@@ -334,23 +339,28 @@ public class OrderAssembler implements EmbeddingHalWrapperAssembler<OrderDTO, Sh
     }
 
     @Override
-    public Link buildSelfLinkForResource(OrderDTO resourceToWrap, ServerWebExchange exchange) {             //4
-        return Link.of("order/" + resourceToWrap.getId())                                                   //5
-                .prependBaseUrl(exchange);                                                                  //6
+    public Class<ShipmentDTO> getEmbeddedTClass() {                                                         //4
+        return null;
     }
 
     @Override
-    public Link buildSelfLinkForEmbedded(ShipmentDTO embedded, ServerWebExchange exchange) {                //7
-        return Link.of("shipment/" + embedded.getId())                                                     
-                .prependBaseUrl(exchange)                                                                   
-                .withHreflang("en-US");                                                                     
+    public Link buildSelfLinkForResource(OrderDTO resourceToWrap, ServerWebExchange exchange) {             //5
+        return Link.of("order/" + resourceToWrap.getId())                                                   //6
+                .prependBaseUrl(exchange);                                                                  //7
     }
 
     @Override
-    public Link buildSelfLinkForResourceList(ServerWebExchange exchange) {                                  //8
-        MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();                 //9
-        return Link.of("order{?userId,someDifferentFilter}")                                               //10
-                .expand(queryParams)                                                                        
+    public Link buildSelfLinkForEmbedded(ShipmentDTO embedded, ServerWebExchange exchange) {                //8
+        return Link.of("shipment/" + embedded.getId())
+                .prependBaseUrl(exchange)
+                .withHreflang("en-US");
+    }
+
+    @Override
+    public Link buildSelfLinkForResourceList(ServerWebExchange exchange) {                                  //9
+        MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();                 //10
+        return Link.of("order{?userId,someDifferentFilter}")                                               //11
+                .expand(queryParams)
                 .prependBaseUrl(exchange);
     }
 }
@@ -363,19 +373,21 @@ The numbered comments in the code correspond to the following explanations:
 
 3. **Implementation of `getResourceTClass()`**: The implementation is also trivial as it simply returns a `ResourceT` which the assembler already specifies.
 
-4. **The Method `buildSelfLinkForResource()`**: Defines how the self link for the (main) resource should look. In this case, the self link is for any `OrderDTO` that is wrapped by the assembler. This applies only for a **single** resource.
+4. **Implementation of `getEmbeddedTClass()`**: Similarly we implement the same for the embedded resource type.
 
-5. **Implementation of `buildSelfLinkForResource()`**: The link is manually built here (as opposed to building it with `SpringControllerLinkBuilder`). The `resourceToWrap` is a given resource that the assembler wraps when prompted to. Note that the relation is automatically set, i.e., overwritten to "self". This means that setting the relation here has no effect.
+5. **The Method `buildSelfLinkForResource()`**: Defines how the self link for the (main) resource should look. In this case, the self link is for any `OrderDTO` that is wrapped by the assembler. This applies only for a **single** resource.
 
-6. **Prepending the base URL**: The `ServerWebExchange` is injected automatically into the controller by Spring, if specified, and holds various information about the HTTP request that a controller received. `Link.prependBaseUrl()` extracts the base URL (i.e., protocol, host, and port) from the `ServerWebExchange` and prepends it to the specified `href`.
+6. **Implementation of `buildSelfLinkForResource()`**: The link is manually built here (as opposed to building it with `SpringControllerLinkBuilder`). The `resourceToWrap` is a given resource that the assembler wraps when prompted to. Note that the relation is automatically set, i.e., overwritten to "self". This means that setting the relation here has no effect.
 
-7. **Implementation of `buildSelfLinkForEmbedded()`**: The method defines how the self link for the embedded resource should look. Technically, the embedded resource is also wrapped. In this case, the self link is for any `ShipmentDTO` that is embedded in an `OrderDTO` by the assembler. The base URL and an additional attribute `hreflang` are also added to the link.
+7. **Prepending the base URL**: The `ServerWebExchange` is injected automatically into the controller by Spring, if specified, and holds various information about the HTTP request that a controller received. `Link.prependBaseUrl()` extracts the base URL (i.e., protocol, host, and port) from the `ServerWebExchange` and prepends it to the specified `href`.
 
-8. **The Method `buildSelfLinkForResourceList`**: Defines the self link for a **list** of resources, i.e., a list of `OrderDTO`s. In contrast to `buildSelfLinkForResource`, which builds the self link for a single resource, this method does not provide the elements. Generally, this shouldn't be required in the first place, as the self link shouldn't contain information about each and every list.
+8. **Implementation of `buildSelfLinkForEmbedded()`**: The method defines how the self link for the embedded resource should look. Technically, the embedded resource is also wrapped. In this case, the self link is for any `ShipmentDTO` that is embedded in an `OrderDTO` by the assembler. The base URL and an additional attribute `hreflang` are also added to the link.
 
-9. **Accessing Query Parameters**: Among the other things that the `ServerWebExchange` provides are the query parameters used. By accessing them, we can construct the URL that was called to trigger the controller.
+9. **The Method `buildSelfLinkForResourceList`**: Defines the self link for a **list** of resources, i.e., a list of `OrderDTO`s. In contrast to `buildSelfLinkForResource`, which builds the self link for a single resource, this method does not provide the elements. Generally, this shouldn't be required in the first place, as the self link shouldn't contain information about each and every list.
 
-10. **Defining the Link**: Since we know that the controller makes use of query parameters, we need to specify them in the URL (it depends on the controller implementation, of course). The URL should correspond to whatever was called to trigger the controller. Note that we didn't use the `SpringControllerLinkBuilder` because `linkTo` is type-safe and expects exact types, whereas the `ServerWebExchange` only provides a `MultiValueMap<String, String>` that bundles together all variables. The link is then expanded and prepended with the base URL.
+10. **Accessing Query Parameters**: Among the other things that the `ServerWebExchange` provides are the query parameters used. By accessing them, we can construct the URL that was called to trigger the controller.
+
+11. **Defining the Link**: Since we know that the controller makes use of query parameters, we need to specify them in the URL (it depends on the controller implementation, of course). The URL should correspond to whatever was called to trigger the controller. Note that we didn't use the `SpringControllerLinkBuilder` because `linkTo` is type-safe and expects exact types, whereas the `ServerWebExchange` only provides a `MultiValueMap<String, String>` that bundles together all variables. The link is then expanded and prepended with the base URL.
 
 Now that we have the assembler, we can start using it in the `OrderController`:
 
@@ -397,22 +409,23 @@ public class OrderController {
     private ShipmentService shipmentService;
 
     @GetMapping("/orders-using-assembler")
-    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrdersUsingAssembler(@RequestParam(required = false) Long userId,                 // 1
-                                                                               Pageable pageable,                                           // 2
-                                                                               ServerWebExchange exchange) {                                // 3
-        
-        Flux<Pair<OrderDTO, ShipmentDTO>> ordersWithShipment = orderService.getOrders(userId, pageable)                                     // 4
-                .flatMap(order ->                                                                                             
-                        shipmentService.getShipmentByOrderId(order.getId())                                                   
-                                .map(shipment -> Pair.of(order, shipment)));                                                  
-        Mono<Long> totalElements = orderService.countAllOrders(userId);                                                                     // 5
-                                                                                                                               
-        int pageSize = pageable.getPageSize();                                                                                              // 6
-        long offset = pageable.getOffset();                                                                                   
-        List<SortCriteria> sortCriteria = pageable.getSort().get()                                                            
+    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrdersUsingAssembler(@RequestParam(required = false) Long userId,     // 1
+                                                                               Pageable pageable,                               // 2
+                                                                               ServerWebExchange exchange) {                    // 3
+
+        PairFlux<OrderDTO, ShipmentDTO> ordersWithShipment = PairFlux.of(orderService.getOrders(userId, pageable)               // 4
+                .flatMap(order ->
+                        shipmentService.getShipmentByOrderId(order.getId())
+                                .map(shipment -> Pair.of(order, shipment))));
+
+        Mono<Long> totalElements = orderService.countAllOrders(userId);                                                         // 5
+
+        int pageSize = pageable.getPageSize();                                                                                  // 6
+        long offset = pageable.getOffset();
+        List<SortCriteria> sortCriteria = pageable.getSort().get()
                 .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))
                 .toList();
-        return orderAssembler.wrapInListWrapper(ordersWithShipment, totalElements, pageSize, offset, sortCriteria, exchange);               // 7
+        return orderAssembler.wrapInListWrapper(ordersWithShipment, totalElements, pageSize, offset, sortCriteria, exchange);   // 7
     }
 }
 ```
@@ -425,13 +438,13 @@ The numbered comments in the code correspond to the following explanations:
 
 3. **Injecting a `ServerWebExchange`**: Spring automatically injects a `ServerWebExchange` if provided in the method signature of a REST controller. This can be useful to the assembler in order to build links.
 
-4. **Getting Data**: The services `orderService` and `shipmentService` are arbitrary services that could be reading from a database or calling another service.
+4. **Getting Data**: The services `orderService` and `shipmentService` are arbitrary services that could be reading from a database or calling another service. The `Flux`of `Pair`s created are wrapped in a `PairFlux` that the assembler awaits.
 
 5. **Get the Number of Total Elements**: Since generally in WebFlux we work with `Flux` and not `Page` instances, another query is required to get the total number of elements.
 
 6. **Converting `Pageable` to a List of `SortCriteria`**: We read the data provided by Spring Data's `Pageable` and convert it to a list of hateoflux's `SortCriteria`.
 
-7. **Create the Wrapper**: Finally, wrap all individual main and embedded resources, add pagination, and put them in a `HalListWrapper`.
+7. **Create the Wrapper**: Finally, wrap all individual main and embedded resources and put them in a `HalListWrapper`. Pagination is added simply by using `wrapInListWrapper` that also accepts paging information.
 
 The serialized result with example payload data of this `HalListWrapper` is as follows:
 
