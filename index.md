@@ -1,14 +1,29 @@
 ---
-title: Home
+title: The Library hateoflux
 layout: home
 nav_order: 1
 ---
 
 # What is hateoflux?
 
-HATEOAS (Hypermedia as the Engine of Application State) is a critical concept in RESTful API design, allowing clients to navigate APIs dynamically using hyperlinks provided by the server. While Spring's HATEOAS library has been a standard choice for many Spring developers, it falls short in certain areas, especially when it comes to full HATEOAS support in Spring WebFlux. Although it works very well in Spring MVC, the integration with Spring WebFlux feels like an incomplete "port", with deep-rooted entanglements in Spring MVC that make it less ideal for modern reactive architectures. This is where hateoflux (HATEOas + webFLUX) steps in as a viable alternative.
+hateoflux is a reactive Java library specifically created to address the limitations of Spring's HATEOAS implementation concerning WebFlux. While Spring HATEOAS performs very well in Spring MVC, its integration with Spring WebFlux feels like an incomplete "port," deeply entangled with Spring MVC components. This makes it less ideal for modern reactive architectures. In contrast, hateoflux is designed spefically for Spring WebFlux, providing seamless integration with existing Spring projects. It offers a more intuitive and comprehensive approach to building hypermedia APIs.
 
-hateoflux is a Java library created specifically to address the limitations of Spring's HATEOAS implementation. It simplifies the representation, assembly, and linking of hypermedia-driven resources in Spring-based applications. Additionally, hateoflux is lightweight and doesn't require any setup or changes in code, as it works seamlessly with Spring, including common annotations such as `@RestController`, `@PathVariable`, and `@RequestMapping`. The library has been designed with the core Spring WebFlux and JSON components in mind, providing seamless integration with existing Spring projects while offering a more intuitive and comprehensive approach to building hypermedia APIs.
+# What Problem Does hateoflux Solve?
+The integration of Spring HATEOAS with WebFlux can feel cumbersome and incomplete, leading to increased complexity and verbosity in code. Key issues include:
+
+* **Verbosity and Boilerplate Code**: Implementing hypermedia controls in reactive applications often requires repetitive and verbose code, especially when assembling resources and adding links.
+* **Manual Pagination Handling**: Spring HATEOAS lacks built-in support for pagination in WebFlux, forcing developers to manually implement pagination metadata and navigation links.
+* **Limited Reactive Support**: The library's primary focus on synchronous processing makes it less optimized for reactive programming models, potentially impacting performance and developer productivity.
+* **Insufficient Documentation**: Documentation and examples for integrating Spring HATEOAS with WebFlux are less extensive, making it challenging for developers to implement advanced hypermedia features in reactive applications.
+
+hateoflux addresses these problems by providing a reactive-first approach to building hypermedia APIs with Spring WebFlux. It simplifies development by:
+* **Reducing Boilerplate**: Simplified assemblers and wrappers minimize repetitive code, allowing developers to focus on core business logic.
+* **Simplifying Link Building**: Offers concise, manual, templated and type-safe link creation using lambda expressions, improving code readability and maintainability.
+* **Enhancing Pagination Support**: Automatically handles pagination details and navigation links, streamlining the implementation of paginated endpoints.
+* **Optimizing for Reactive Environments**: Designed specifically for WebFlux and R2DBC in mind, ensuring seamless integration and better performance in reactive architectures.
+* **Providing Focused Documentation**: Offers comprehensive guidance and examples tailored for reactive programming, reducing the learning curve.
+
+For an in-depth comparison, including detailed examples and explanations, as well as shortcomings, please refer to [Spring HATEOAS vs. hateoflux](./docs/spring-vs-hateoflux.html)
 
 # Key Components
 

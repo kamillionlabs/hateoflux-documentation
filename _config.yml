@@ -8,3 +8,18 @@ url: https://just-the-docs.github.io
 logo: "/assets/logos/hateoflux_black.svg"
 favicon_ico: "/assets/logos/hf_dots_favicon.ico"
 color_scheme: wider
+back_to_top: true
+back_to_top_text: "Back to top"
+
+callouts:
+  warning:
+    title: Warning
+    color: red
+  note:
+    title: Note
+    color: purple
+  highlight:
+    color: yellow
+  important:
+    title: Important
+    color: blue
