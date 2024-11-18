@@ -62,22 +62,22 @@ public Mono<HalResourceWrapper<Product, Void>> getProduct(@PathVariable String i
 }
 ```
 
-## Specifying the `ResourceT` explicitly 
-Java implements generics through a mechanism called **type erasure**, which means that generic type information (e.g. `ResourceT` in the case of assemblers) is not available at runtime. This poses a problem when the retrieval of the class type of an object is needed, but no object is available.
+## Additionally Specifying the Resource Types `ResourceT` and `EmbeddedT` explicitly 
+Java implements generics through a mechanism called **type erasure**, which means that generic type information (e.g. `ResourceT`) is not available at runtime. This poses a problem when the retrieval of the class type of an object is needed, but no object is available.
 
 In HATEOAS, objects withing the `_embedded` node are all named. Assemblers use the class type information to infer the name that they need to use for such cases:
 ```javascript
 {
   "id": 12345,
   "_embedded": {
-    "shipment": {  // <-- This name e.g. is based on the Class type of the embedded resource 
+    "shipment": {  // <-- This name e.g. is based on the class type of the embedded resource 
       "id": 98765,
       // other fields etc.
     }
   }
 }
 ```
-While a missing embedded resource would simply result in the removal of the `_embedded` node altogether. However, if the node is expected to contain a list, it is common to send an empty list instead (as is the case with hateoflux). An empty list of orders in HAL JSON would look like this:
+While a missing embedded resource would simply result in the removal of the `_embedded` node altogether. However, if the node is expected to contain a list, it is common to send an empty list instead. An empty list of orders in HAL JSON would look like this:
 ```javascript
 {
   "_embedded": {
@@ -88,7 +88,7 @@ While a missing embedded resource would simply result in the removal of the `_em
   }
 }
 ```
-In order for assemblers to still be able to infer the class type from an empty `List<Order>` or `Flux<Order>`, the method `getResourceTClass()` is used.
+To enable assemblers to infer the class type from an empty `List<Order>` or `Flux<Order>`, the method `getResourceTClass()` is used. Similarly, embedded objects, whether in a list or standalone, require the type to be named, hence the use of the method `getEmbeddedTClass()`.
 
 ## Overview of Assemblers
 
@@ -180,7 +180,8 @@ public class ProductController {
 The `EmbeddingHalWrapperAssembler` interface is designed for assembling wrappers that include embedded resources. It extends the capabilities of `FlatHalWrapperAssembler` by handling both the main resource and its associated embedded resources.
 
 #### Key Methods to Implement
-**`getResourceTClass()`**: Specifies the class type of `ResourceT` that the assembler builds. **(Required)**
+* **`getResourceTClass()`**: Specifies the class type of `ResourceT` that the assembler builds. **(Required)**
+* **`getEmbeddedTClass()`**: Specifies the class type of `EmbeddedT` that the assembler builds. **(Required)**
 * `buildSelfLinkForResource()`: Constructs the self-link for the main resource. **(Required)**
 * `buildSelfLinkForEmbedded()`: Constructs the self-link for the embedded resource. **(Required)**
 * `buildSelfLinkForResourceList()`: Constructs the self-link for the resource list. **(Required)**
@@ -198,6 +199,11 @@ public class OrderAssembler implements EmbeddingHalWrapperAssembler<Order, Payme
     @Override
     public Class<Order> getResourceTClass() {
         return Order.class;
+    }
+    
+    @Override
+    public Class<PaymentDetail> getEmbeddedTClass() {
+        return PaymentDetail.class;
     }
 
     @Override
@@ -252,11 +258,13 @@ public class OrderController {
     public Mono<HalListWrapper<Order, PaymentDetail>> getAllOrders(String userId, ServerWebExchange exchange) {
         Flux<Order> ordersOfUser = orderService.getOrdersByUserId(userId);
 
-        Flux<Pair<OrderDTO,PaymentDetailDTO>> ordersWithPaymentDetails = ordersOfUser.flatMap(order -> {
+        PairFlux<OrderDTO,PaymentDetailDTO> ordersWithPaymentDetails = PairFlux.of(
+            ordersOfUser.flatMap(order -> {
             int id = order.getId();
             return paymentService.getPaymentDetailByOrderId(id)
                     .map(paymentDetail -> Pair.of(order, paymentDetail));
-        });
+            })
+        );
         
         return orderAssembler.wrapInListWrapper(ordersWithPaymentDetails, exchange);
     }

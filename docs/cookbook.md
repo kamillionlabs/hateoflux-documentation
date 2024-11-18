@@ -1,7 +1,7 @@
 ---
 title: "Cookbook: Examples &amp; Use Cases"
 layout: default
-nav_order: 5
+nav_order: 4
 ---
 
 # Cookbook: Examples &amp; Use Cases
