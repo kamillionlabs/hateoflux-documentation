@@ -1,7 +1,7 @@
 ---
 title: "Core Concepts"
 layout: default
-nav_order: 4
+nav_order: 3
 ---
 
 # Core Concepts
@@ -35,6 +35,5 @@ Assemblers simplify creating HAL-compliant resource representations by wrapping 
 * **Types of Assemblers**:
   * **FlatHalWrapperAssembler**: For resources without embedded content.
   * **EmbeddingHalWrapperAssembler**: For resources with embedded content.
-  * **Reactive Assemblers**: Support asynchronous handling with reactive programming.
 
-[See how to use assemblers in hateoflux](./assemblers.html)
+[Learn how to use assemblers in hateoflux](./assemblers.html)

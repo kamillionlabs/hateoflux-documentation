@@ -58,9 +58,9 @@ For example, when an order includes shipment details, the wrapper would encapsul
 }
 ```
 _**See also:**_
-* [Fundamentals about resource wrappers](./core-concepts//representation-model.html#resource-wrappers)
-* [Explained full example on how to wrap a resource](.//cookbook.html#creating-a-halresourcewrapper-without-an-embedded-resource)
-* [Explained full example on how to wrap a resource with another embedded resource](.//cookbook.html#creating-a-halresourcewrapper-with-embedded)
+* [Fundamentals about resource wrappers](./core-concepts/representation-model.html#resource-wrappers)
+* [Explained full example on how to wrap a resource](./cookbook.html#creating-a-halresourcewrapper-without-an-embedded-resource)
+* [Explained full example on how to wrap a resource with another embedded resource](./cookbook.html#creating-a-halresourcewrapper-with-an-embedded-resource)
 
 ## Assemblers and Boilerplate Code
 ### Spring HATEOAS
@@ -162,7 +162,7 @@ As demonstrated, adding an embedded resource (or a list of them if required) is 
 
 _**See also:**_
 * [Fundamentals about assembler](./core-concepts/assemblers.html)
-* [Explained full example implementation of an assembler](./cookbook.html#using-an-assembler-to-create-a-hallistwrapper-with-embedded-resources)
+* [Explained full example implementation of an assembler](./cookbook.html#using-an-assembler-to-create-a-hallistwrapper-for-resources-with-an-embedded-resource)
 
 ## Pagination Handling
 ### Spring HATEOAS
