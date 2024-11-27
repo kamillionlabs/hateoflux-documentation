@@ -12,9 +12,10 @@ nav_order: 4
 ---
 
 {: .important }
-Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the service (e.g. against endpoints for [manually built wrappers](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/ManualOrderController.java) or those [built by an assembler](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/main/java/de/kamillionlabs/hateofluxdemos/controller/AssembledOrderController.java)) or check the examples directly in the [CookbookExamplesTest](https://github.com/kamillionlabs/hateoflux-demos/blob/master/src/test/java/de/kamillionlabs/hateofluxdemos/CookbookExamplesTest.java) unit test.
-
+Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the micro service or check the examples directly in the given unit tests.
 <br>
+
+## Setup
 Let's first define the following two DTO classes that are going to be used in further examples for creating `HalResourceWrapper`, `HalEmbeddedWrapper` and `HalListWrapper`:
 
 ```java
@@ -44,8 +45,9 @@ public class ShipmentDTO {
     String status;
 }
 ```
+## Manually Creating Wrappers
 
-## Creating a `HalResourceWrapper` without an Embedded Resource
+### Creating a `HalResourceWrapper` without an Embedded Resource
 
 To create a `HalResourceWrapper` for a simple order without shipment details, the wrapper is implemented as shown below. This implementation typically resides within a controller method (or better yet, in an [assembler](./core-concepts/assemblers.html)):
 
@@ -94,7 +96,7 @@ The numbered comments in the code correspond to the following explanations:
 
 The fields `id`, `total`, and `status` are part of the `OrderDTO` and were fetched by the `OrderService`. The links were built in the code example above. Note that each relation is the key to the link's attributes. In this case, we have two links with the relations "shipment" and "self", while both provide only an `href`.
 
-## Creating a `HalResourceWrapper` with an Embedded Resource
+### Creating a `HalResourceWrapper` with an Embedded Resource
 
 {: .note }
 The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
@@ -168,7 +170,7 @@ The serialized result of this `HalResourceWrapper` is as follows:
 
 The root fields are part of the main resource, `OrderDTO`. The node `_embedded` includes the embedded resource, `ShipmentDTO`. Notice how the name of the object is not "shipmentDTO" but "shipment". This is because the `ShipmentDTO` class has an `@Relation` annotation that defines how the class name should be written when it is serialized. Under `_links`, we can also see the two attributes that we added to the self link. One is the expanded `href` that the `SpringControllerLinkBuilder` extracted from the controller class and method, and the other is the `hreflang` we added.
 
-## Creating a `HalListWrapper` with Pagination
+### Creating a `HalListWrapper` with Pagination
 
 {: .note }
 The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
@@ -179,7 +181,7 @@ To not deviate too much from the previous examples, lets consider the use case, 
 import static de.kamillionlabs.hateoflux.utility.SortDirection.ASCENDING;
 import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
 
-@GetMapping("/orders-with-pagination-manual")
+@GetMapping("/orders-with-pagination")
 public Mono<HalListWrapper<OrderDTO, Void>> getOrdersManualBuilt(@RequestParam Long userId,                       //  1
                                                                  Pageable pageable,                               //  2
                                                                  ServerWebExchange exchange) {                    //  3
@@ -317,17 +319,16 @@ The json has a few interesting points worth highlighting. The numbered comments 
 
    The inclusion of sorting parameters (e.g., `sort=id,desc`) is optional but provides clients with complete context for the data they are viewing.
 
-## Using an Assembler to Create a `HalListWrapper` For Resources With an Embedded Resource
+## Create Wrappers Using Assemblers
+When building wrappers manually, each field needs to be specified explicitly. This means that a single resource, a list of resources, pagination, and embedded resources all require different setups. However, with assemblers, this process is simplified. We only need to implement stubs that define how links are built, while the assemblers come with default implementations that can create wrappers in a single line, given the appropriate input.
+
+In the following sections, we'll create an assembler and provide multiple examples of the different types of wrappers that can be generated with it.
 
 {: .note }
-Even though this example creates a `HalListWrapper` for resources with an embedded resource, the assembler can generate different types of wrappers: either a single `HalResourceWrapper` or a `HalListWrapper` with or without pagination. The primary effort lies in implementing the assembler; using it is a one-liner.
+All combinations shown here can also be created manually by using the public methods of the wrappers themselves. Reviewing the default implementations of the assemblers can help clarify how this is done.
 
-Now let's combine all the above to construct:
-* A list of resources
-* All resources have an embedded resource
-* The list is paginated
-
-On top of that we'll use an assembler i.e. we will implement the `ReactiveEmbeddingHalWrapperAssembler`. As business case we will stay on topic and return a paginated list of orders, where each order also specifies shipment details. First of all, we need said implementation of the assembler:
+### Creating the Assembler
+The following is an assembler for wrappers that primarily wrap an `OrderDTO` and embed a `ShipmentDTO`. The assembler implements only the required methods, which mainly focus on creating self-links. Optional methods are available for adding additional links that may be desired.
 
 ```java
 @Component
@@ -340,7 +341,7 @@ public class OrderAssembler implements EmbeddingHalWrapperAssembler<OrderDTO, Sh
 
     @Override
     public Class<ShipmentDTO> getEmbeddedTClass() {                                                         //4
-        return null;
+        return ShipmentDTO.class;
     }
 
     @Override
@@ -359,7 +360,7 @@ public class OrderAssembler implements EmbeddingHalWrapperAssembler<OrderDTO, Sh
     @Override
     public Link buildSelfLinkForResourceList(ServerWebExchange exchange) {                                  //9
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();                 //10
-        return Link.of("order{?userId,someDifferentFilter}")                                               //11
+        return Link.of("order{?userId,someDifferentFilter}")                                                //11
                 .expand(queryParams)
                 .prependBaseUrl(exchange);
     }
@@ -369,7 +370,7 @@ The numbered comments in the code correspond to the following explanations:
 
 1. **Implementing the Interface**: The `OrderAssembler` implements the `EmbeddingHalWrapperAssembler` with the generic types `OrderDTO` and `ShipmentDTO`. Similarly to how the generics describe the main and embedded resource, the generics in assemblers follow the same logic.
 
-2. **The Method `getResourceTClass()`**: It is a technical necessity. It is required so empty lists can be named correctly, as the name for lists is always derived from the class type. The `@Relation` annotation is still honored (e.g., `OrderDTO` becomes `orders`).
+2. **The Method `getResourceTClass()`**: It is a technical necessity. It is required so empty lists can be named correctly, as the name for lists is always derived from the class type (see [here for more details](/core-concepts/assemblers.html#additionally-specifying-the-resource-types-resourcet-and-embeddedt-explicitly)). The `@Relation` annotation is still honored (e.g., `OrderDTO` becomes `orders`).
 
 3. **Implementation of `getResourceTClass()`**: The implementation is also trivial as it simply returns a `ResourceT` which the assembler already specifies.
 
@@ -389,27 +390,23 @@ The numbered comments in the code correspond to the following explanations:
 
 11. **Defining the Link**: Since we know that the controller makes use of query parameters, we need to specify them in the URL (it depends on the controller implementation, of course). The URL should correspond to whatever was called to trigger the controller. Note that we didn't use the `SpringControllerLinkBuilder` because `linkTo` is type-safe and expects exact types, whereas the `ServerWebExchange` only provides a `MultiValueMap<String, String>` that bundles together all variables. The link is then expanded and prepended with the base URL.
 
-Now that we have the assembler, we can start using it in the `OrderController`:
+### Using an Assembler to Create a `HalListWrapper` For Resources With an Embedded Resource
+
+Lets start with a more complicated setup to showcase what assemblers are capable of. In this example we'll create wrapper with the following characteristics:
+
+* Contains a list of resources
+* All resources have an embedded resource
+* The list is paginated
+
+Using the assembler we just created, the `OrderController` could have the following method:
 
 ```java
 import static de.kamillionlabs.hateoflux.utility.SortDirection.ASCENDING;
 import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
 
-@RestController
-@RequestMapping("/orders")
-public class OrderController {
-
-    @Autowired
-    private OrderAssembler orderAssembler;
-
-    @Autowired
-    private OrderService orderService;
-
-    @Autowired
-    private ShipmentService shipmentService;
-
-    @GetMapping("/orders-using-assembler")
-    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrdersUsingAssembler(@RequestParam(required = false) Long userId,     // 1
+    @GetMapping("/orders-with-single-embedded-and-pagination")
+    public Mono<HalListWrapper<OrderDTO, ShipmentDTO>> getOrdersWithShipmentAndPagination(
+                                                                               @RequestParam(required = false) Long userId,     // 1
                                                                                Pageable pageable,                               // 2
                                                                                ServerWebExchange exchange) {                    // 3
 
@@ -523,3 +520,675 @@ The serialized result with example payload data of this `HalListWrapper` is as f
    }
 }
 ```
+### Further Examples Using the Same Assembler
+
+{: .important }
+Reminder: Every example shown can be viewed and debugged in the [hateoflux-demos repository](https://github.com/kamillionlabs/hateoflux-demos). Fork it and test as you explore options available! Either run the application and curl against the micro service or check the examples directly in the given unit tests.
+<br>
+
+In this section, we will reuse the defined assembler to showcase other possibilities for its usage. The following examples do not include detailed explanations, unlike the example above. However, inline comments may be added where some guidance is deemed necessary. These examples exclusively demonstrate how to interact with the assembler using `Mono`s and `Flux`es, even though it is also possible to use non-reactive types.
+
+<br>
+
+#### Creating an Empty `HalResourceWrapper`
+
+This is generally not possible. There must be at least a resource; otherwise, e.g. when wrapping an empty `Mono`, the assembler simply returns another empty `Mono`. This should not be an issue, as a service would typically respond with an HTTP 404 in such cases.
+
+<br>
+
+#### Creating a `HalResourceWrapper` with a Resource and No Embedded
+##### Code
+{: .no_toc }
+
+```java
+// Given input
+Mono<OrderDTO> resource = orderService.getOrder(1234);
+Mono<ShipmentDTO> embedded = Mono.empty();
+
+// Assembler call
+Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInResourceWrapper(resource, embedded, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalResourceWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+{: .highlight }
+Note that an empty embedded object results in the removal of the `_embedded` node, whereas an [empty list/flux of embedded](./cookbook.html#creating-a-halresourcewrapper-with-a-resource-and-an-empty-list-of-embedded), results in an empty JSON array.
+
+```json
+{
+   "id": 1234,
+   "userId": 37,
+   "total": 99.99,
+   "status": "Processing",
+   "_links": {
+      "self": {
+         "href": "https://www.example.com/order/1234"
+      }
+   }
+}
+```
+</details>
+
+<br>
+
+#### Creating a `HalResourceWrapper` with a Resource and a Single Embedded
+##### Code
+{: .no_toc }
+
+```java
+// Given input
+Mono<OrderDTO> resource = orderService.getOrder(1234);
+Mono<ShipmentDTO> embedded = shipmentService.getShipment(127);
+
+// Assembler call
+Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInResourceWrapper(resource, embedded, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalResourceWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+   "id": 1234,
+   "userId": 37,
+   "total": 99.99,
+   "status": "Processing",
+   "_embedded": {
+     "shipment": {
+       "id": 127,
+       "carrier": "UPS",
+       "trackingNumber": "154-ASD-1238724",
+       "status": "Completed",
+       "_links": {
+         "self": {
+           "href": "https://www.example.com/shipment/127",
+           "hreflang": "en-US"
+         }
+       }
+     }
+   },
+   "_links": {
+     "self": {
+       "href": "https://www.example.com/order/1234"
+     }
+   }
+ }
+```
+</details>
+
+<br>
+
+
+#### Creating a `HalResourceWrapper` with a Resource and a List of Embedded
+##### Code
+{: .no_toc }
+
+```java
+// Given input
+Mono<OrderDTO> resource = orderService.getOrder(1234);
+Flux<ShipmentDTO> embeddedList = shipmentService.getShipments(3287, 4125);
+
+// Assembler call
+Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInResourceWrapper(resource, embeddedList, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalResourceWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+   "id": 1234,
+   "userId": 37,
+   "total": 99.99,
+   "status": "Processing",
+   "_embedded": {
+      "shipments": [
+         {
+            "id": 3287,
+            "carrier": "DHL",
+            "trackingNumber": "562-DHL-9182736",
+            "status": "Pending",
+            "_links": {
+               "self": {
+                  "href": "https://www.example.com/shipment/3287",
+                  "hreflang": "en-US"
+               }
+            }
+         },
+         {
+            "id": 4125,
+            "carrier": "USPS",
+            "trackingNumber": "739-USP-1827364",
+            "status": "Completed",
+            "_links": {
+               "self": {
+                  "href": "https://www.example.com/shipment/4125",
+                  "hreflang": "en-US"
+               }
+            }
+         }
+      ]
+   },
+   "_links": {
+      "self": {
+         "href": "https://www.example.com/order/1234"
+      }
+   }
+}
+```
+</details>
+
+<br>
+
+#### Creating a `HalResourceWrapper` with a Resource and an Empty List of Embedded
+##### Code
+{: .no_toc }
+
+```java
+// Given input
+Mono<OrderDTO> resource = orderService.getOrder(1234);
+Flux<ShipmentDTO> embeddedList = Flux.empty();
+
+// Assembler call
+Mono<HalResourceWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInResourceWrapper(resource, embeddedList, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalResourceWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+{: .highlight }
+Note that an empty list/flux of embedded results in an empty JSON array, whereas an [empty embedded object](./cookbook.html#creating-a-halresourcewrapper-with-a-resource-and-no-embedded), results in the removal of the `_embedded` node altogether.
+
+```json
+{
+   "id": 1234,
+   "userId": 37,
+   "total": 99.99,
+   "status": "Processing",
+   "_embedded": {
+     "shipments": []
+   },
+   "_links": {
+     "self": {
+       "href": "https://www.example.com/order/1234"
+     }
+   }
+ }
+```
+</details>
+
+<br>
+
+#### Creating an Empty `HalListWrapper`
+##### Code
+{: .no_toc }
+
+```java
+//Given input
+PairFlux<OrderDTO,ShipmentDTO> emptyPairFlux = PairFlux.empty();
+MultiRightPairFlux<OrderDTO,ShipmentDTO> emptyMultiRightPairFlux = MultiRightPairFlux.empty();
+
+//Assembler call
+// Option 1
+HalListWrapper<OrderDTO,ShipmentDTO> resultOp1 = orderAssembler.createEmptyListWrapper(OrderDTO.class, exchange);
+// Option 2
+Mono<HalListWrapper<OrderDTO,ShipmentDTO>> resultOp2 = orderAssembler.wrapInListWrapper(emptyPairFlux, exchange);
+// Option 3
+Mono<HalListWrapper<OrderDTO,ShipmentDTO>> resultOp3 = orderAssembler.wrapInListWrapper(emptyMultiRightPairFlux,exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalListWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+  "_embedded": {
+    "orderDTOs": []
+  },
+  "_links": {
+    "self": {
+      "href": "https://www.example.com/order"
+    }
+  }
+}
+```
+</details>
+
+<br>
+
+#### Creating a `HalListWrapper` with Resources Each Having a Single Embedded
+##### Code
+{: .no_toc }
+
+```java
+//Given input
+Flux<OrderDTO> orders = orderService.getOrdersByUserId(38L);
+PairFlux<OrderDTO, ShipmentDTO> resourcesWithEmbedded;
+
+resourcesWithEmbedded = PairFlux.from(orders)
+                                .with(order -> shipmentService.getLastShipmentByOrderId(order.getId()));
+
+//Assembler call
+Mono<HalListWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInListWrapper(resourcesWithEmbedded, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalListWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+    "_embedded": {
+      "orderDTOs": [
+        {
+          "id": 9550,
+          "userId": 38,
+          "total": 149.99,
+          "status": "Created",
+          "_embedded": {
+            "shipment": {
+              "id": 3105,
+              "carrier": "FedEx",
+              "trackingNumber": "759-FDX-1029384",
+              "status": "Out for Delivery",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/3105",
+                  "hreflang": "en-US"
+                }
+              }
+            }
+          },
+          "_links": {
+            "self": {
+              "href": "https://www.example.com/order/9550"
+            }
+          }
+        },
+        {
+          "id": 5058,
+          "userId": 38,
+          "total": 149.99,
+          "status": "Delivered",
+          "_embedded": {
+            "shipment": {
+              "id": 5032,
+              "carrier": "FedEx",
+              "trackingNumber": "357-FDX-2938475",
+              "status": "In Transit",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/5032",
+                  "hreflang": "en-US"
+                }
+              }
+            }
+          },
+          "_links": {
+            "self": {
+              "href": "https://www.example.com/order/5058"
+            }
+          }
+        }
+      ]
+    },
+    "_links": {
+      "self": {
+        "href": "https://www.example.com/order"
+      }
+    }
+  }
+```
+</details>
+
+<br>
+
+#### Creating a `HalListWrapper` with Resources Each Having a Single Embedded with Paging
+##### Code
+{: .no_toc }
+
+```java
+//Given input
+int pageNumber = 0;
+int pageSize = 2;
+Pageable pageable = PageRequest.of(pageNumber, pageSize); // This would usually be provided by Spring automatically
+Flux<OrderDTO> orders = orderService.getOrdersByUserId(37L, pageable);
+
+PairFlux<OrderDTO, ShipmentDTO> resourcesWithEmbedded;
+resourcesWithEmbedded= PairFlux.from(orders)
+                                .with(order -> shipmentService.getLastShipmentByOrderId(order.getId()));
+
+Mono<Long> totalNumberOfElements = orderService.countAllOrdersByUserId(37L);
+
+//Assembler call
+Mono<HalListWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInListWrapper(resourcesWithEmbedded,
+                                                                                              totalNumberOfElements,
+                                                                                              pageSize,
+                                                                                              pageable.getOffset(),
+                                                                                              null, //for simplicity, we do not sort
+                                                                                              exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalListWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+  "page": {
+    "size": 2,
+    "totalElements": 6,
+    "totalPages": 3,
+    "number": 0
+  },
+  "_embedded": {
+    "orderDTOs": [
+      {
+        "id": 1234,
+        "userId": 37,
+        "total": 99.99,
+        "status": "Processing",
+        "_embedded": {
+          "shipment": {
+            "id": 127,
+            "carrier": "UPS",
+            "trackingNumber": "154-ASD-1238724",
+            "status": "Completed",
+            "_links": {
+              "self": {
+                "href": "https://www.example.com/shipment/127",
+                "hreflang": "en-US"
+              }
+            }
+          }
+        },
+        "_links": {
+          "self": {
+            "href": "https://www.example.com/order/1234"
+          }
+        }
+      },
+      {
+        "id": 1057,
+        "userId": 37,
+        "total": 72.48,
+        "status": "Delivered",
+        "_embedded": {
+          "shipment": {
+            "id": 105,
+            "carrier": "UPS",
+            "trackingNumber": "154-ASD-1284724",
+            "status": "Completed",
+            "_links": {
+              "self": {
+                "href": "https://www.example.com/shipment/105",
+                "hreflang": "en-US"
+              }
+            }
+          }
+        },
+        "_links": {
+          "self": {
+            "href": "https://www.example.com/order/1057"
+          }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "next": {
+      "href": "https://www.example.com/order?page=1&size=2"
+    },
+    "self": {
+      "href": "https://www.example.com/order?page=0&size=2"
+    },
+    "last": {
+      "href": "https://www.example.com/order?page=2&size=2"
+    }
+  }
+}
+```
+</details>
+
+<br>
+
+#### Creating a `HalListWrapper` with Resources Each Having a List of Embedded
+##### Code
+{: .no_toc }
+
+```java
+//Given input
+Flux<OrderDTO> ordersWithReturns = orderService.getOrdersByUserId(17L);
+MultiRightPairFlux<OrderDTO, ShipmentDTO> resourcesWithEmbedded;
+resourcesWithEmbedded = MultiRightPairFlux.from(ordersWithReturns)
+                                          .with(order -> shipmentService.getShipmentsByOrderId(order.getId()));
+//Assembler call
+Mono<HalListWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInListWrapper(resourcesWithEmbedded, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalListWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+  "_embedded": {
+    "orderDTOs": [
+      {
+        "id": 1070,
+        "userId": 17,
+        "total": 199.99,
+        "status": "Returned",
+        "_embedded": {
+          "shipments": [
+            {
+              "id": 2551,
+              "carrier": "UPS",
+              "trackingNumber": "610-UPS-3748291",
+              "status": "Completed",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/2551",
+                  "hreflang": "en-US"
+                }
+              }
+            },
+            {
+              "id": 3904,
+              "carrier": "DHL",
+              "trackingNumber": "680-DHL-9182736",
+              "status": "Completed",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/3904",
+                  "hreflang": "en-US"
+                }
+              }
+            }
+          ]
+        },
+        "_links": {
+          "self": {
+            "href": "https://www.example.com/order/1070"
+          }
+        }
+      },
+      {
+        "id": 5078,
+        "userId": 17,
+        "total": 34.0,
+        "status": "Returned",
+        "_embedded": {
+          "shipments": [
+            {
+              "id": 3750,
+              "carrier": "USPS",
+              "trackingNumber": "755-USP-8374652",
+              "status": "Completed",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/3750",
+                  "hreflang": "en-US"
+                }
+              }
+            },
+            {
+              "id": 4203,
+              "carrier": "FedEx",
+              "trackingNumber": "920-FDX-5647382",
+              "status": "Completed",
+              "_links": {
+                "self": {
+                  "href": "https://www.example.com/shipment/4203",
+                  "hreflang": "en-US"
+                }
+              }
+            }
+          ]
+        },
+        "_links": {
+          "self": {
+            "href": "https://www.example.com/order/5078"
+          }
+        }
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "https://www.example.com/order"
+    }
+  }
+}
+```
+</details>
+
+<br> 
+
+#### Creating a `HalListWrapper` with Resources Each Having a List of Embedded with Some Being `null`/Empty
+##### Code
+{: .no_toc }
+
+```java
+//Given input
+Flux<OrderDTO> ordersWithAndWithoutShipments = orderService.getOrdersByUserId(39L);
+MultiRightPairFlux<OrderDTO, ShipmentDTO> resourcesWithEmbedded;
+resourcesWithEmbedded = MultiRightPairFlux.from(ordersWithAndWithoutShipments)
+                                          .with(order -> shipmentService.getShipmentsByOrderId(order.getId()));
+        
+//Assembler call
+Mono<HalListWrapper<OrderDTO, ShipmentDTO>> result = orderAssembler.wrapInListWrapper(resourcesWithEmbedded, exchange);
+```
+
+##### Output
+{: .no_toc }
+
+The serialized result of the `HalListWrapper` is as follows:
+<details closed markdown="block">
+<summary style="color: #ffffff; background-color: #989898; padding: 0.6em 1em">
+ <b>Click to expand</b>
+</summary>
+
+```json
+{
+   "_embedded": {
+      "orderDTOs": [
+         {
+            "id": 7250,
+            "userId": 39,
+            "total": 34.0,
+            "status": "Created",
+            "_embedded": {
+               "shipments": []
+            },
+            "_links": {
+               "self": {
+                  "href": "https://www.example.com/order/7250"
+               }
+            }
+         },
+         {
+            "id": 1230,
+            "userId": 39,
+            "total": 99.99,
+            "status": "Delivered",
+            "_embedded": {
+               "shipments": [
+                  {
+                     "id": 4005,
+                     "carrier": "FedEx",
+                     "trackingNumber": "634-FDX-8473621",
+                     "status": "Delivered",
+                     "_links": {
+                        "self": {
+                           "href": "https://www.example.com/shipment/4005",
+                           "hreflang": "en-US"
+                        }
+                     }
+                  }
+               ]
+            },
+            "_links": {
+               "self": {
+                  "href": "https://www.example.com/order/1230"
+               }
+            }
+         }
+      ]
+   },
+   "_links": {
+      "self": {
+         "href": "https://www.example.com/order"
+      }
+   }
+}
+```
+</details>
+
+<br>

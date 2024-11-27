@@ -179,6 +179,9 @@ public class ProductController {
 ### Overview of `EmbeddingHalWrapperAssembler`
 The `EmbeddingHalWrapperAssembler` interface is designed for assembling wrappers that include embedded resources. It extends the capabilities of `FlatHalWrapperAssembler` by handling both the main resource and its associated embedded resources.
 
+{: .highlight }
+The same rules that apply to the `EmbeddedT` of the wrappers also apply to the `EmbeddingHalWrapperAssembler`. Having an `EmbeddedT` does not mean it cannot be empty or `null` (see [here for more details](./representation-model.html#main-and-embedded-resources)).
+
 #### Key Methods to Implement
 * **`getResourceTClass()`**: Specifies the class type of `ResourceT` that the assembler builds. **(Required)**
 * **`getEmbeddedTClass()`**: Specifies the class type of `EmbeddedT` that the assembler builds. **(Required)**
