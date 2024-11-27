@@ -86,13 +86,13 @@ This looks acceptable until a more complex structure is needed, where other reso
 * **Boilerplate Code**: Repetitive patterns for essentially the same logic that need to be implemented in every assembler. This increases maintenance overhead.
 
 ### hateoflux
-In contrast, hateoflux's assemblers provide built-in methods to wrap a single or a list of resources. The only thing to implement is the part that is different from one resource to another: the links. The following is an implementation of `ReactiveFlatHalWrapperAssembler`. The end result is the same as above:
+In contrast, hateoflux's assemblers provide built-in methods to wrap a single or a list of resources. The only thing to implement is the part that is different from one resource to another: the links. The following is an implementation of `FlatHalWrapperAssembler`. The end result is the same as above:
 
 ```java
 import de.kamillionlabs.hateoflux.linkbuilder.SpringControllerLinkBuilder;
 
 @Component
-public class ProductAssembler implements ReactiveFlatHalWrapperAssembler<Product> {
+public class ProductAssembler implements FlatHalWrapperAssembler<Product> {
 
     @Override
     public Link buildSelfLinkForResource(Product product, ServerWebExchange exchange) {
@@ -120,13 +120,13 @@ public Mono<HalResourceWrapper<Product, Void>> getProduct(@PathVariable String i
     return productAssembler.wrapInResourceWrapper(product, exchange);
 }
 ```
-If a situation arises where an embedded resource (e.g., `ShipmentDetail` as above) is required, the `ReactiveEmbeddingHalWrapperAssembler` can be implemented. Here as well, only the logic for creating the self links needs to be provided:
+If a situation arises where an embedded resource (e.g., `ShipmentDetail` as above) is required, the `EmbeddingHalWrapperAssembler` can be implemented. Here as well, only the logic for creating the self links needs to be provided:
 
 ```java
 import de.kamillionlabs.hateoflux.linkbuilder.SpringControllerLinkBuilder;
 
 @Component
-public class ProductAssembler implements ReactiveEmbeddingHalWrapperAssembler<Product, ShipmentDetail> {
+public class ProductAssembler implements EmbeddingHalWrapperAssembler<Product, ShipmentDetail> {
 
     @Override
     public Link buildSelfLinkForResource(Product product, ServerWebExchange exchange) {
@@ -237,7 +237,7 @@ To mimic the functionality of Spring described above, an `OrderAssembler` would 
 
 ```java
 @Component
-public class OrderAssembler implements ReactiveFlatHalWrapperAssembler<Order> {
+public class OrderAssembler implements FlatHalWrapperAssembler<Order> {
 
     @Override
     public Link buildSelfLinkForResource(Order order, ServerWebExchange exchange) {
@@ -268,7 +268,7 @@ public class OrderAssembler implements ReactiveFlatHalWrapperAssembler<Order> {
     }
 }
 ```
-The assembler handles both the wrapping of resources and the addition of other links. The wrapping is done in the `ReactiveFlatHalWrapperAssembler` and does not need to be reimplemented.
+The assembler handles both the wrapping of resources and the addition of other links. The wrapping is done in the `FlatHalWrapperAssembler` and does not need to be reimplemented.
 
 Similar to Spring, the controller stays unchanged by the types of links added.
 
@@ -337,7 +337,7 @@ Link selfLink = SpringControllerLinkBuilder.linkTo(
         .withSelfRel();
 ```
 
-{: .note }
+{: .highlight }
 Note that hateoflux provides a `Link` immediately whereas Spring's `WebFluxLinkBuilder` is only able to return a `Mono<Link>`. If `toMono()` is not called, the process remains in the builder.
 
 
@@ -358,7 +358,7 @@ In contrast, hateoflux is specifically designed for reactive applications using 
 
 ## Media Types
 
-{: .highlight }
+{: .note }
 TL;DR hateoflux only supports HAL+JSON
 
 A significant distinction between Spring HATEOAS and hateoflux is their support for various media types. **Spring HATEOAS offers extensive support for multiple media types**, including HAL, Collection+JSON, and others. This flexibility allows developers to cater to diverse client requirements and standards, enabling richer interactions and broader compatibility across different API consumers. However, supporting multiple media types introduces additional complexity and abstraction layers, which can make the implementation more cumbersome and harder to maintain.
@@ -369,7 +369,7 @@ While hateoflux excels in providing a streamlined and efficient solution for HAL
 
 ## Affordance
 
-{: .highlight }
+{: .note }
 TL;DR hateoflux does not supports affordance
 
 **Spring HATEOAS supports affordances**, a powerful feature that allows developers to define actions that clients can perform on resources. By using affordances, developers can enrich API responses with metadata describing potential actions, such as form fields for data input or additional details on how a client might interact with a resource. This makes APIs more self-descriptive, enabling clients to discover possible operations dynamically without requiring hardcoded knowledge of the server’s capabilities. For example, affordances can define input parameters or constraints directly within the response, making it clear what actions a client is permitted to take.
@@ -378,7 +378,7 @@ In contrast, **hateoflux does not support affordances**, aligning with its goal 
 
 ## CURIE Support
 
-{: .highlight }
+{: .note }
 TL;DR hateoflux does not supports CURIE
 
 Spring HATEOAS includes support for CURIEs (Compact URIs), which enable the use of namespaced relation types in hypermedia representations. CURIEs simplify the representation of custom relation types, making APIs more readable and organized. This feature is valuable in complex APIs where consistent referencing of custom link relations is necessary, allowing for clearer client interpretation and easier navigation.

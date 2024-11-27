@@ -43,13 +43,15 @@ Both approaches are valid and supported by hateoflux. When sending a stream of o
 
 ### Main and Embedded Resources
 
-Generally speaking, a resource is an object in a HAL document and can be seen as the payload. Throughout all wrappers, 2 generic types are reoccurring that represent resources:
+Generally speaking, a resource is an object in a HAL document and can be seen as the payload. Throughout all wrappers (and assemblers), 2 generic types are reoccurring that represent resources:
 - `ResourceT`: Represents the "main" resource, meaning the object type that the HAL document focuses on.
 - `EmbeddedT`: Also a resource, but of secondary importance. An embedded resource is not sent on its own but always attached to a "main" resource `ResourceT`.
 
-All wrapper classes define an `EmbeddedT`. When there is no need to embed another resource, the type is set to `Void`, indicating that no embedded resource exists.
+All wrapper classes define an `EmbeddedT`. When there is no need to embed another resource, the type is set to `Void`, indicating that no embedded resource exists. So e.g. `HalResourceWrapper<OrderDTO,PaymentDTO>` has a main resource `OrderDTO` and an embedded resource `PaymentDTO`, whereas `HalResourceWrapper<OrderDTO,Void>` contains only a main resource.
 
-As an example, an API of an online store might expose "Order" objects, i.e.,`OrderDTO`s. In a scenario where a customer may be checking the status of an order in an app to see if it's still processing or completed, the HAL document (we're going with HAL+JSON) might look like this:
+It is important to note however, that the `EmbeddedT` is still not mandatory even though it is e.g. specified as `PaymentDTO`. In general, if a wrapper has a concrete `EmbeddedT`, it typically signifies that the object is expected to have one. However, it is acceptable for the embedded resource to be represented as a single empty `HalEmbeddedWrapper`, an empty list, or simply `null`. These configurations are interpreted differently. The serialized JSON will either omit the `_embedded` node entirely or include it as an empty array (`[]`).
+
+As an example, an API of an online store might expose "Order" objects, i.e.,`OrderDTO`s. In a scenario where a customer may be checking the status of an order in an app to see if it's still processing or completed, the HAL document might look like this:
 
 ```javascript
 {
@@ -88,7 +90,10 @@ Suppose now the order was shipped. The customer might want to check both the ord
   }
 }
 ```
-In the first scenario, `ResourceT` would have been an `OrderDTO`. Since no embedded resource exists, `EmbeddedT` is set to `Void`. In the second scenario, the "main" resource is still an `OrderDTO`; however, another resource, `ShipmentDTO`, has been added as a secondary resource to provide additional information. `ShipmentDTO` would, in this case, be an `EmbeddedT`.
+In the first scenario, `ResourceT` would be an `OrderDTO`. Depending on the specific use case and design choices, `EmbeddedT` is set to `Void`, for example, if the given controller exclusively provides `OrderDTO`s. However, if `ShipmentDTO`s are typically the norm and this particular order is an exception, then `EmbeddedT` could also be a `ShipmentDTO`—in this case, it would simply be empty or `null`.
+
+In the second scenario, the "main" resource remains an `OrderDTO`. However, an additional resource, `ShipmentDTO`, has been included as a secondary resource to provide supplementary information. In this case, `ShipmentDTO` would naturally serve as the `EmbeddedT`.
+
 
 ### Name of a Resource
 
