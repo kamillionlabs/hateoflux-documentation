@@ -196,6 +196,8 @@ Link ordersLink = linkTo(UserController.class, controller -> controller.getUserO
 System.out.println(ordersLink.getHref()); 
 // Outputs: /users/12345/orders?status=shipped
 ```
+<br>
+
 #### Handling Collections in Parameters
 
 If a controller method accepts collections:
@@ -216,4 +218,4 @@ System.out.println(searchLink.getHref());
 ```
 
 ### Note on Composite Parameters
-In contrast to Spring HATEOAS, collections are expanded in a non-composite way (e.g., `roles=admin,user`). If annotated with `@Composite`, the builder will render them in a composite way (e.g., `roles=admin&roles=user`). This is the negated behaviour of Spring's `@NonComposite`. 
+In contrast to Spring HATEOAS, collections are per default expanded in a non-composite way (e.g., `roles=admin,user`). If annotated with `@Composite`, the builder will render them in a composite way (e.g., `roles=admin&roles=user`). This is the opposite behaviour of Spring HATEOAS and its `@NonComposite` annotation. 

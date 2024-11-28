@@ -13,7 +13,7 @@ nav_order: 1
 
 ## Resource Wrappers
 
-In hypermedia-driven APIs, **wrapping resources** enhances domain objects by adding hypermedia links and embedded resources. This section covers using `HalResourceWrapper`, `HalListWrapper`, `HalEmbeddedWrapper`, and `HalPageInfo` to wrap resources according to HAL standards.
+In hypermedia-driven APIs, wrapping resources enhances domain objects by adding hypermedia links and embedded resources. This section covers using `HalResourceWrapper`, `HalListWrapper`, and `HalEmbeddedWrapper` to wrap resources according to HAL standards.
 
 ### Wrapper Classes
 
@@ -97,9 +97,9 @@ In the second scenario, the "main" resource remains an `OrderDTO`. However, an a
 
 ### Name of a Resource
 
-HATEOAS is ultimately used to send documents. hateoflux relies on Jackson for serialization, meaning that fields are named the same way they are in Java or as they are annotated with `@JsonProperty`. While main resources, when serialized, only include the member variables of a DTO, embedded resources also specify the resource's name.
+HATEOAS is ultimately used to send documents. hateoflux relies on Jackson for serialization, meaning that fields are named the same way they are in Java or as they are annotated with `@JsonProperty`. While main resources, when serialized, only include the member variables of the resource, embedded resources also specify the resource's name.
 
-In Spring's HATEOAS, by default, the name of an embedded resource, or a list of them, is simply the name of the class for a single resource or the name with an additional "s" appended at the end. While this works fine for a resource called `Book`, which would become `book` and `books` for a list, it is less ideal when the DTO is properly named, as it would serialize into `bookDTO` and `bookDTOs`. Spring's HATEOAS defines the annotation `@Relation` for this purpose, which specifies the name of a class during serialization.
+In Spring's HATEOAS, by default, the name of an embedded resource, or a list of them, is simply the name of the class for a single resource or the name with an additional "s" appended at the end. While this works fine for a resource called `Book`, which would become `book` and `books` for a list, it is less ideal when we use e.g. suffixes like "DTO", as it would serialize into `bookDTO` and `bookDTOs`. Spring's HATEOAS defines the annotation `@Relation` for this purpose, which specifies the name of a class during serialization.
 
 hateoflux adopts the same annotation with the same name and meaning. Therefore, it is sufficient to annotate a resource class with `@Relation` while specifying the name of the class during serialization.
 
@@ -107,7 +107,7 @@ hateoflux adopts the same annotation with the same name and meaning. Therefore, 
 ## Links
 Links are essential in HATEOAS-driven APIs, providing navigational controls for clients to interact with resources dynamically. They allow clients to discover actions and related resources through embedded links instead of hardcoding API endpoints, promoting a flexible client-server architecture.
 
-In HAL (Hypertext Application Language), links are included in a `_links` section of the JSON representation. Each link consists of a relation  that describes the nature of the link and a URL (`href`) that points to the related resource or action.
+In HAL, links are included in a `_links` section of the JSON representation. Each link consists of a relation  that describes the nature of the link and a URL (`href`) that points to the related resource or action.
 
 ### Overview of Links in HATEOAS
 
@@ -155,7 +155,7 @@ In hateoflux, links are represented by the `Link` class, which encapsulates both
 #### Links in hateoflux
 
 - **Creation**: Links can be created manually or generated using utilities provided by hateoflux.
-- **Representation**: Links are included in the `_links` section of the resource representation i.e. are part of any type of `Wrapper`, making the resources adhere to the HAL (Hypertext Application Language) standard.
+- **Representation**: Links are included in the `_links` section of the resource representation i.e. are part of any type of `Wrapper`, making the resources adhere to the HAL standard.
 - **Navigation**: Clients use the links provided to navigate between resources, perform actions, or discover available operations. While a link consist mainly of an `href` and a `rel`, other attributes are also available such as `title` or `hreflang` and flags such as `templated` or `deprecated`. These additional attributes help chose the right link for that right purpose. 
 
 ## Pagination

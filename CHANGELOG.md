@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Versioning and changelog
 
 ### Changed
+
 * some cleanup
+* proofread and reviewed content 
 
 ## [0.1.0]
 

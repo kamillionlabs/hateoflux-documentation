@@ -12,6 +12,9 @@ This section provides a side-by-side comparison of hateoflux and Spring HATEOAS,
 {:toc}
 ---
 
+{: .note }
+For a TL;DR, head to the [summary table](#summary-table-of-features) at the bottom.
+
 ## Representation Models
 In hypermedia-driven APIs, the way resources are represented and structured is fundamental to ensuring seamless data interaction between the server and client. Spring HATEOAS and hateoflux adopt different approaches to handling these representations, with Spring utilizing "Models" and hateoflux employing "Wrappers." This distinction is pivotal in understanding how each framework manages resource enrichment and hypermedia controls.
 
@@ -106,6 +109,11 @@ public class ProductAssembler implements FlatHalWrapperAssembler<Product> {
     Link buildSelfLinkForResourceList(ServerWebExchange exchange) {
         //Also needs to be implemented
     }
+    
+    @Override
+    public Class<Product> getResourceTClass() {                                                           
+        return Product.class;                                                                             
+    }
 }
 ```
 This appears similar to Spring; however, the important difference is that no "Models" or "Wrappers" are created. Instead, the self link for any `Product` or a list of them is defined. The wrapping itself is managed by the assembler. Usage in a controller is then as simple as:
@@ -142,6 +150,8 @@ public class ProductAssembler implements EmbeddingHalWrapperAssembler<Product, S
                 .prependBaseUrl(exchange)
                 .withSelfRel();
     }
+    
+    //Also implement getResourceTClass() and getEmbeddedTClass()                                                           
 }
 ```
 The usage remains straightforward:
@@ -400,5 +410,5 @@ The following table summarizes the main comparisons between Spring HATEOAS and h
 | **Documentation Support**           |                           ❌<br/>Better for Spring MVC; less comprehensive for WebFlux, challenging for reactive development.                            |        ✅<br/>Tailored for reactive Spring WebFlux with focused documentation and examples.        |
 | **Media Types**                     |                                 ✅<br/>Supports multiple media types (HAL, Collection+JSON, etc.), offering flexibility.                                 |  ⚠️<br/>Only supports HAL+JSON; simpler but less flexible for clients needing other media types.  |
 | **Affordance**                      |                             ✅<br/>Supports affordances, enabling clients to discover actions they can perform on resources.                             |                                ❌<br/>Does not support affordances                                 |
-| **CURIE Support**                   |                                           ✅<br/>Supports CURIEs (Compact URIs) for namespaced relation types.                                           |                              ❌<br/>Does not support CURIEs currently                              |
+| **CURIE Support**                   |                                           ✅<br/>Supports CURIEs (Compact URIs) for namespaced relation types.                                           |                                   ❌<br/>Does not support CURIEs                                   |
 | **Framework Weight**                |                                      ⚠️<br/>Heavier with more extensive features; may add complexity and overhead.                                      |   ✅<br/>Lightweight and easier to use in reactive applications; focuses on essential features.    |

@@ -59,3 +59,26 @@ dependencies {
 * **Plug and Play with Jackson**: hateoflux relies solely on Jackson's default mechanisms for JSON processing. There is no need to register additional modules or define specific beans, making the setup process hassle-free.
 
 * **No Additional Configuration Required**: Once the dependency is added, hateoflux automatically integrates with your Spring WebFlux application. You don't need to adapt your existing codebase or configurations to accommodate hateoflux.
+
+# How Do I Get Started with hateoflux?
+
+Getting started with hateoflux is straightforward, allowing you to seamlessly integrate hypermedia-driven features into your Spring WebFlux project without extensive configuration or boilerplate code.
+
+## Core Components
+
+hateoflux provides two primary wrappers to manage your resources effectively:
+
+* **`HalResourceWrapper`**: Wraps individual resources, adding essential hypermedia links and optional embedded secondary resources.
+* **`HalListWrapper`**: Wraps collections of resources, handling pagination metadata and navigation links automatically.
+
+These wrappers ensure that your domain models remain clean and focused, while hateoflux manages the hypermedia aspects.
+
+## Assemblers
+
+To simplify the creation of these wrappers, hateoflux offers assembler interfaces with default implementations. These assemblers handle the repetitive tasks of wrapping resources and adding links, allowing you to concentrate on defining the specific links and embedded resources relevant to your application.
+
+## Additional Resources
+
+For practical guidance and detailed examples, visit the [cookbook](./docs/cookbook.html), which showcases multiple use cases and scenarios. To gain a deeper understanding of hateoflux's foundational concepts, including representation models, link building, and assemblers, explore the [core concepts](./docs/core-concepts/core-concepts.html) section.
+
+By leveraging these components and resources, you can efficiently build robust, hypermedia-driven APIs with hateoflux in your reactive Spring applications.

@@ -99,7 +99,7 @@ The fields `id`, `total`, and `status` are part of the `OrderDTO` and were fetch
 ### Creating a `HalResourceWrapper` with an Embedded Resource
 
 {: .note }
-The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you (e.g. [see here](#creating-a-halresourcewrapper-with-a-resource-and-a-single-embedded))!
 
 Now we want to create a `HalResourceWrapper` that doesn't just reference a shipment via a link, but also includes the whole object instead:
 
@@ -173,7 +173,7 @@ The root fields are part of the main resource, `OrderDTO`. The node `_embedded` 
 ### Creating a `HalListWrapper` with Pagination
 
 {: .note }
-The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you!
+The code might seem a bit lengthy; however, if you choose to use assemblers, they will handle most of it automatically for you (e.g. [see here](#creating-a-hallistwrapper-with-resources-each-having-a-single-embedded-with-paging))!
 
 To not deviate too much from the previous examples, lets consider the use case, where the user wants to list all his orders. It is quite possible to implement this as `Flux`of `HalResourceWrapper<OrderDTO>`. However, we decide to create a `Mono` of `HalListWrapper<OrderDTO>`:
 
@@ -298,7 +298,7 @@ The serialized result with example payload data of this `HalListWrapper` is as f
   }
 }
 ```
-The json has a few interesting points worth highlighting. The numbered comments are explained as follows:
+The JSON has a few interesting points worth highlighting. The numbered comments are explained as follows:
 
 1. **Pagination Metadata**: The `"page"` block contains pagination details provided by `withPageInfo()`. It includes fields such as:
    - `size`: Number of items per page (here, 2).

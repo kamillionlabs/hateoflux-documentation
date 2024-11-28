@@ -2,12 +2,13 @@
 title: "Core Concepts"
 layout: default
 nav_order: 3
+has_toc: false
 ---
 
 # Core Concepts
 {: .no_toc }
 
-Understanding the core concepts of **hateoflux** is key to building hypermedia-driven APIs that follow HATEOAS principles. This section provides a concise overview of the essential components: the representation model, link building, and assemblers.
+Understanding the core concepts of hateoflux is key to building hypermedia-driven APIs that follow HATEOAS principles.
 
 ## Representation Model
 Learn how hateoflux wraps resources to enhance domain objects with hypermedia links and embedded resources, following the HAL (Hypertext Application Language) standard.
@@ -15,7 +16,7 @@ Learn how hateoflux wraps resources to enhance domain objects with hypermedia li
 * **Wrapping Resources**: Encapsulate single resources and collections with hypermedia links.
 * **Reactive Systems**: Handle multiple results effectively in reactive APIs.
 * **Main and Embedded Resources**: Distinguish between primary and embedded resources.
-* **Resource Naming: Customize** serialization names using `@Relation`.
+* **Resource Naming**: Customize serialization names using `@Relation`.
 
 [Learn more about the representation model](./representation-model.html)
 
