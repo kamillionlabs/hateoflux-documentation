@@ -41,9 +41,7 @@ Wrapping reactively is a seamless operation and takes `Publisher`s in and provid
 @GetMapping
 public Mono<HalListWrapper<Product, Void>> getAllProducts(ServerWebExchange exchange) {
     Flux<Product> productFlux = productService.getAllProducts();
-    Mono<Long> totalElements = productService.countProducts();
-
-    return productAssembler.wrapInListWrapper(productFlux, totalElements, 20, 0L, null, exchange);
+    return productAssembler.wrapInListWrapper(productFlux, exchange);
 }
 ```
 ### Non-Reactive Wrapping
@@ -55,15 +53,15 @@ Wrapping non-reactively is useful when modifications are necessary. However, thi
 public Mono<HalResourceWrapper<Product, Void>> getProduct(@PathVariable String id, ServerWebExchange exchange) {
     Mono<Product> productMono = productService.getProductById(id);
     return productMono
-            .map(product -> {
+            .map(productObject -> {
                 // e.g. do something here with the product first
-                return productAssembler.wrapInResourceWrapper(product, exchange);
+                return productAssembler.wrapInResourceWrapper(productObject, exchange);
             });
 }
 ```
 
 ## Additionally Specifying the Resource Types `ResourceT` and `EmbeddedT` explicitly 
-Java implements generics through a mechanism called **type erasure**, which means that generic type information (e.g. `ResourceT`) is not available at runtime. This poses a problem when the retrieval of the class type of an object is needed, but no object is available.
+Java implements generics through a mechanism called [type erasure](https://en.wikipedia.org/wiki/Generics_in_Java#Problems_with_type_erasure), which means that generic type information (e.g. `ResourceT`) is not available at runtime. This poses a problem when the retrieval of the class type of an object is needed, but no object is available.
 
 In HATEOAS, objects withing the `_embedded` node are all named. Assemblers use the class type information to infer the name that they need to use for such cases:
 ```javascript
@@ -170,9 +168,7 @@ public class ProductController {
     @GetMapping
     public Mono<HalListWrapper<Product, Void>> getAllProducts(ServerWebExchange exchange) {
         Flux<Product> productFlux = productService.getAllProducts();
-        Mono<Long> totalElements = productService.countProducts();
-
-        return productAssembler.wrapInListWrapper(productFlux, totalElements, 20, 0L, null, exchange);
+        return productAssembler.wrapInListWrapper(productFlux, exchange);
     }
 }
 ```
@@ -260,14 +256,12 @@ public class OrderController {
     @GetMapping
     public Mono<HalListWrapper<Order, PaymentDetail>> getAllOrders(String userId, ServerWebExchange exchange) {
         Flux<Order> ordersOfUser = orderService.getOrdersByUserId(userId);
-
-        PairFlux<OrderDTO,PaymentDetailDTO> ordersWithPaymentDetails = PairFlux.of(
-            ordersOfUser.flatMap(order -> {
-            int id = order.getId();
-            return paymentService.getPaymentDetailByOrderId(id)
-                    .map(paymentDetail -> Pair.of(order, paymentDetail));
-            })
-        );
+        PairFlux<Order,PaymentDetail> ordersWithPaymentDetails = 
+            PairFlux.zipWith(ordersOfUser, (order -> {
+                int id = order.getId();
+                return paymentService.getPaymentDetailByOrderId(id);
+            }
+        ));
         
         return orderAssembler.wrapInListWrapper(ordersWithPaymentDetails, exchange);
     }

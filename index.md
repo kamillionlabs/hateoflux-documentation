@@ -6,61 +6,79 @@ nav_order: 1
 
 # What is hateoflux?
 
-hateoflux is a reactive Java library specifically created to address the limitations of Spring's HATEOAS implementation concerning WebFlux. While Spring HATEOAS performs very well in Spring MVC, its integration with Spring WebFlux feels like an incomplete "port," deeply entangled with Spring MVC components. This makes it less ideal for modern reactive architectures. In contrast, hateoflux is designed spefically for Spring WebFlux, providing seamless integration with existing Spring projects. It offers a more intuitive and comprehensive approach to building hypermedia APIs.
+hateoflux is a reactive Java library specifically created to address the limitations of Spring's HATEOAS implementation concerning WebFlux. While Spring HATEOAS performs very well in Spring MVC, its integration with Spring WebFlux feels like an incomplete "port," deeply entangled with Spring MVC components. This makes it less ideal for modern reactive architectures. In contrast, hateoflux is designed specifically for Spring WebFlux, providing seamless integration with existing Spring projects. It offers a more intuitive and comprehensive approach to building hypermedia APIs.
 
 # What Problem Does hateoflux Solve?
-The integration of Spring HATEOAS with WebFlux can feel cumbersome and incomplete, leading to increased complexity and verbosity in code. Key issues include:
 
-* **Verbosity and Boilerplate Code**: Implementing hypermedia controls in reactive applications often requires repetitive and verbose code, especially when assembling resources and adding links.
-* **Manual Pagination Handling**: Spring HATEOAS lacks built-in support for pagination in WebFlux, forcing developers to manually implement pagination metadata and navigation links.
-* **Limited Reactive Support**: The library's primary focus on synchronous processing makes it less optimized for reactive programming models, potentially impacting performance and developer productivity.
-* **Insufficient Documentation**: Documentation and examples for integrating Spring HATEOAS with WebFlux are less extensive, making it challenging for developers to implement advanced hypermedia features in reactive applications.
+Developing hypermedia-driven APIs in reactive Spring applications using WebFlux presents unique challenges. Traditional libraries like Spring HATEOAS are primarily designed for Spring MVC and can lead to verbose code, extensive boilerplate, and complex class hierarchies when adapted to reactive environments. This complexity arises from:
 
-hateoflux addresses these problems by providing a reactive-first approach to building hypermedia APIs with Spring WebFlux. It simplifies development by:
-* **Reducing Boilerplate**: Simplified assemblers and wrappers minimize repetitive code, allowing developers to focus on core business logic.
-* **Simplifying Link Building**: Offers concise, manual, templated and type-safe link creation using lambda expressions, improving code readability and maintainability.
-* **Enhancing Pagination Support**: Automatically handles pagination details and navigation links, streamlining the implementation of paginated endpoints.
-* **Optimizing for Reactive Environments**: Designed specifically for WebFlux and R2DBC in mind, ensuring seamless integration and better performance in reactive architectures.
-* **Providing Focused Documentation**: Offers comprehensive guidance and examples tailored for reactive programming, reducing the learning curve.
+* **Verbose Assemblers and Boilerplate Code**: Spring HATEOAS requires manual resource wrapping and link addition, increasing maintenance overhead.
+* **Inefficient Representation Models**: Inheritance-based models can clutter domain objects and create complex hierarchies.
+* **Limited Reactive Support and Documentation**: Sparse guidance for WebFlux makes it difficult to implement hypermedia APIs effectively in reactive applications.
+
+hateoflux addresses these issues by providing a lightweight, reactive-first library tailored for Spring WebFlux. It simplifies hypermedia API development by:
+
+* **Using Resource Wrappers**: Keeps domain models clean and decoupled from hypermedia concerns by composing wrappers around them.
+* **Simplifying Assemblers**: Reduces boilerplate by focusing on link creation, automating resource wrapping and embedding.
+* **Enhancing Pagination Handling**: Offers built-in support with `HalListWrapper`, automatically managing metadata and navigation links.
+* **Providing Focused Documentation**: Offers comprehensive guidance and examples specifically for reactive environments, improving the developer experience.
+
+By concentrating on essential features and supporting HAL+JSON, hateoflux streamlines the creation of hypermedia APIs in reactive applications, eliminating unnecessary complexity and fostering more maintainable and intuitive codebases.
 
 For an in-depth comparison, including detailed examples and explanations, as well as shortcomings, please refer to [Spring HATEOAS vs. hateoflux](./docs/spring-vs-hateoflux.html)
 
-# Key Components
+# How is hateoflux Configured in My Spring Webflux Project?
 
-## 1. Representation Models
+Configuring hateoflux in your Spring WebFlux project is straightforward and requires no setup. hateoflux is designed to integrate seamlessly with the Spring framework, leveraging its existing configurations and annotations without necessitating additional adjustments.
 
-In Spring HATEOAS, the `EntityModel`, `CollectionModel`, and `PagedModel` classes are commonly used to represent resources with hypermedia links. hateoflux provides its own alternatives to these models:
+## Adding hateoflux to Your Project
 
-- `HalResourceWrapper` replaces `EntityModel` for representing single resources with hypermedia links.
-- `HalListWrapper` serves as a unified replacement for both `CollectionModel` and `PagedModel`, allowing collections to   optionally include pagination without needing a distinct class.
+To include hateoflux in your Spring WebFlux project, simply add it as a dependency using your build tool of choice.
 
-Unlike Spring's approach, which uses the notion of 'Model', hateoflux treats these as HAL wrappers, meaning that the underlying resource or DTO remains unchanged but is wrapped to add hypermedia capabilities as needed. As is common with HATEOAS, any resource in hateoflux can have another embedded resource. However, a conscious design choice was made to limit this to a single level, meaning that a main resource may have another embedded one, but the embedded resource cannot have further nested resources. This decision was made primarily to avoid impractical complexity; if a resource needs multiple levels of embedding, it may indicate that the domain model should be refined instead.
+{: .highlight }
+See latest available version in [Maven Central](https://central.sonatype.com/artifact/de.kamillionlabs/hateoflux)
 
-## 2. Link-Building Capabilities
+### Gradle
+```groovy
+dependencies {
+    implementation 'de.kamillionlabs:hateoflux:latest-version'
+}
+```
 
-Link building is at the heart of HATEOAS, and Spring's HATEOAS library provides the `Link` and `WebMvcLinkBuilder` classes for generating links to controllers and methods. In contrast, hateoflux defines its own `Link` and `LinkRelation` classes, serving the same purpose as Spring's counterparts. While Spring offers separate builders like `WebMvcLinkBuilder` for MVC and `WebFluxLinkBuilder` for WebFlux, hateoflux introduces the `SpringControllerLinkBuilder` as a dedicated replacement for WebFlux scenarios.
+### Maven
+```xml
+<dependency>
+    <groupId>de.kamillionlabs</groupId>
+    <artifactId>hateoflux</artifactId>
+    <version>latest-version</version>
+</dependency>
+```
+## Seamless Integration with Spring
+* **Honors Spring Annotations**: hateoflux fully supports all standard Spring Controller annotations such as `@RestController`, `@RequestParam`, and others. This means you can continue to use your existing annotations without any modifications.
 
-The builder usage in hateoflux closely mirrors that of Spring HATEOAS. Both hateoflux and Spring utilize a controller class as a reference and invoke its methods, differing primarily in declaration style. In both frameworks, paths and variables are automatically extracted, and templated URIs are expanded, making link building declarative and straightforward.
+* **Plug and Play with Jackson**: hateoflux relies solely on Jackson's default mechanisms for JSON processing. There is no need to register additional modules or define specific beans, making the setup process hassle-free.
 
-Additionally, hateoflux integrates seamlessly with Spring's annotations, such as `@RestController`, `@PathVariable`, and `@RequestMapping`, without requiring any customizations. While Spring HATEOAS includes annotations like `@Relation`, hateoflux provides replacements for the essential ones to ensure compatibility.
+* **No Additional Configuration Required**: Once the dependency is added, hateoflux automatically integrates with your Spring WebFlux application. You don't need to adapt your existing codebase or configurations to accommodate hateoflux.
 
-## 3. Assemblers
+# How Do I Get Started with hateoflux?
 
-hateoflux also includes its own **assemblers** that serve a similar role to `RepresentationModelAssembler` in Spring's HATEOAS. Assemblers in hateoflux are responsible for converting domain objects into representation models enriched with hypermedia links. Unlike Spring's version, hateoflux assemblers are designed as interfaces that come mostly preprogrammed with default logic, making them easier to use out of the box. They help abstract the usage of all the components of hateoflux, acting as a simplified programming interface. Typically, developers only need to specify which links to create for a given resource type and how, allowing for greater extensibility and customization without the complexity.
+Getting started with hateoflux is straightforward, allowing you to seamlessly integrate hypermedia-driven features into your Spring WebFlux project without extensive configuration or boilerplate code.
 
-# Comparison with Spring's HATEOAS Library
+## Core Components
 
-Spring's HATEOAS is a comprehensive package that offers much more functionality than hateoflux. In contrast, hateoflux focuses solely on reactive systems and the core principles of HATEOAS. However, it is precisely this focus that makes hateoflux easy to use and lightweight. All functionalities are carefully curated, allowing for a comfortable programming interface. The following lists the most important features of Spring's HATEOAS and hateoflux, as well as those that are not present in hateoflux:
+hateoflux provides two primary wrappers to manage your resources effectively:
 
-| Functionalities                                      | Spring HATEOAS                                                                | hateoflux                                          |
-|------------------------------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------|
-| Representation Model                                 | ✅ `EntityModel`, `CollectionModel`, `PagedModel`                              | ✅ `HalResourceWrapper`, `HalListWrapper`           |
-| `linkTo()` on controller method                      | ✅  With `WebMvcLinkBuilder` for MVC and `WebFluxLinkBuilder` for WebFlux | ✅  With `SpringControllerLinkBuilder`              |
-| URI templates as links (query and path parameters)   | ✅                                                                             | ✅                                                  |
-| Manual expansion of URIs (query and path parameters) | ✅                                                                             | ✅                                                  |
-| Assemblers                                           | ✅                                                                             | ✅                                                  |
-| Serialization                                        | ✅                                                                             | ✅                                                  |
-| Deserialization                                      | ✅                                                                             | ❌ no, only designed for server to client communication (i.e. serialization only) |
-| Media Types                                          | ✅ various                                                                     | ⚠️ only `application/hal+json`                      |
-| Affordance                                           | ✅                                                                             | ❌                                                  |
-| Curie                                                | ✅                                                                             | ❌                                                  |
+* **`HalResourceWrapper`**: Wraps individual resources, adding essential hypermedia links and optional embedded secondary resources.
+* **`HalListWrapper`**: Wraps collections of resources, handling pagination metadata and navigation links automatically.
+
+These wrappers ensure that your domain models remain clean and focused, while hateoflux manages the hypermedia aspects.
+
+## Assemblers
+
+To simplify the creation of these wrappers, hateoflux offers assembler interfaces with default implementations. These assemblers handle the repetitive tasks of wrapping resources and adding links, allowing you to concentrate on defining the specific links and embedded resources relevant to your application.
+
+## Additional Resources
+
+For practical guidance and detailed examples, visit the [cookbook](./docs/cookbook.html), which showcases multiple use cases and scenarios. To gain a deeper understanding of hateoflux's foundational concepts, including representation models, link building, and assemblers, explore the [core concepts](./docs/core-concepts/core-concepts.html) section.
+
+By leveraging these components and resources, you can efficiently build robust, hypermedia-driven APIs with hateoflux in your reactive Spring applications.
