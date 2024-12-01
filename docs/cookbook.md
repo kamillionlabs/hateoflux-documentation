@@ -410,14 +410,14 @@ import static de.kamillionlabs.hateoflux.utility.SortDirection.DESCENDING;
                                                                                Pageable pageable,                               // 2
                                                                                ServerWebExchange exchange) {                    // 3
 
-        PairFlux<OrderDTO, ShipmentDTO> ordersWithShipment = PairFlux.of(orderService.getOrders(userId, pageable)               // 4
-                .flatMap(order ->
-                        shipmentService.getShipmentByOrderId(order.getId())
-                                .map(shipment -> Pair.of(order, shipment))));
-
+        Flux<OrderDTO> orders = orderService.getOrders(userId, pageable);
+        PairFlux<OrderDTO, ShipmentDTO> ordersWithShipment = 
+                PairFlux.zipWith(orders, (order -> shipmentService.getLastShipmentByOrderId(order.getId())));                   // 4
+                
         Mono<Long> totalElements = orderService.countAllOrders(userId);                                                         // 5
 
         int pageSize = pageable.getPageSize();                                                                                  // 6
+
         long offset = pageable.getOffset();
         List<SortCriteria> sortCriteria = pageable.getSort().get()
                 .map(o -> SortCriteria.by(o.getProperty(), o.getDirection().isAscending() ? ASCENDING : DESCENDING))
@@ -435,7 +435,7 @@ The numbered comments in the code correspond to the following explanations:
 
 3. **Injecting a `ServerWebExchange`**: Spring automatically injects a `ServerWebExchange` if provided in the method signature of a REST controller. This can be useful to the assembler in order to build links.
 
-4. **Getting Data**: The services `orderService` and `shipmentService` are arbitrary services that could be reading from a database or calling another service. The `Flux`of `Pair`s created are wrapped in a `PairFlux` that the assembler awaits.
+4. **Getting Data**: The services `orderService` and `shipmentService` are arbitrary services that could be reading from a database or calling another service. The `PairFlux` is created by combing each order with its corresponding shipment.
 
 5. **Get the Number of Total Elements**: Since generally in WebFlux we work with `Flux` and not `Page` instances, another query is required to get the total number of elements.
 
