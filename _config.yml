@@ -1,9 +1,9 @@
 title: hateoflux Documentation
 description: Documentation of the HATEOAS-Webflux library hateoflux
-version: 0.2.0
+version: 1.0.0
 theme: just-the-docs
 
-url: https://just-the-docs.github.io
+url: https://hateoflux.kamillionlabs.de
 
 
 logo: "/assets/logos/hateoflux_black.svg"
