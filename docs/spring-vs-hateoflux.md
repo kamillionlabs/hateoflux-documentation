@@ -18,7 +18,7 @@ For a TL;DR, head to the [summary table](#summary-table-of-features) at the bott
 ## Representation Models
 In hypermedia-driven APIs, the way resources are represented and structured is fundamental to ensuring seamless data interaction between the server and client. Spring HATEOAS and hateoflux adopt different approaches to handling these representations, with Spring utilizing "Models" and hateoflux employing "Wrappers." This distinction is pivotal in understanding how each framework manages resource enrichment and hypermedia controls.
 
-### Spring HATEOAS
+### Spring HATEOAS Approach
 Spring HATEOAS leverages representation models to encapsulate resources along with their hypermedia links. The primary classes used are `RepresentationModel` for individual resources and `CollectionModel` for collections of resources. Developers often **wrap** or sometimes **extend** these classes to include additional attributes and links, facilitating a flexible and extensible way to build resource representations.
 
 For example, an `OrderModel` might be defined as follows:
@@ -35,7 +35,7 @@ By extending `RepresentationModel`, the `OrderModel` inherently gains the abilit
 
 To be fair, however, wrapping is very common in Spring, so the above example is not necessarily the norm. The problem with putting an `_embedded` resource, however, persists.
 
-### hateoflux
+### hateoflux Approach
 In contrast, hateoflux utilizes wrappers to enhance domain objects with hypermedia links and embedded resources exclusively. The key classes provided by hateoflux include `HalResourceWrapper`, `HalListWrapper`. These wrappers are designed to be composed around existing domain models instead of inherited from them, ensuring that the original models remain clean and decoupled from hypermedia concerns.
 
 For instance, an `Order` can be wrapped using `HalResourceWrapper` as shown below:
@@ -68,8 +68,59 @@ _**See also:**_
 * [Explained full example on how to wrap a resource](./cookbook.html#creating-a-halresourcewrapper-without-an-embedded-resource)
 * [Explained full example on how to wrap a resource with another embedded resource](./cookbook.html#creating-a-halresourcewrapper-with-an-embedded-resource)
 
+## Response Handling
+Spring HATEOAS and hateoflux take significantly different approaches to handling responses in reactive applications, particularly regarding how they manage the challenges of HTTP responses in a reactive context.
+
+### Spring HATEOAS Approach
+Spring HATEOAS relies on the standard Spring WebFlux `ResponseEntity`, requiring manual wrapping of resources:
+
+* **Basic Response Structure**: Uses standard `ResponseEntity` wrapped in `Mono` or containing `Flux`
+* **Resource Wrapping**: Manual wrapping of resources in `EntityModel` or `CollectionModel`
+* **Reactive Challenges**: Developers must handle the complexities of when to finalize headers and status codes in streaming scenarios
+* **Type Safety**: Complex nested generics when combining `Mono`/`Flux` with `ResponseEntity` and `EntityModel`
+
+Example in Spring HATEOAS:
+```java
+@GetMapping
+public Mono<ResponseEntity<CollectionModel<EntityModel<Product>>>> getProducts() {
+    return productService.findAll()
+        .map(product -> EntityModel.of(product))
+        .collectList()
+        .map(products -> CollectionModel.of(products))
+        .map(wrapped -> ResponseEntity.ok()
+            .header("Custom-Header", "value")
+            .body(wrapped));
+}
+```
+
+### hateoflux Approach
+hateoflux provides dedicated reactive response types that handle the complexities of reactive HTTP responses:
+
+* **Specialized Response Types**:
+    - `HalResourceResponse` for single resources
+    - `HalMultiResourceResponse` for streaming multiple resources
+    - `HalListResponse` for collections as a single HAL document
+* **Fluent Header API**: Similar to Spring, provides a fluent interface for header manipulation
+* **Status Code Handling**: Like Spring, provides factory methods for common HTTP status codes
+* **Automatic Resource Wrapping**: Seamless integration with HAL wrappers
+* **Reactive-First Design**: Purpose-built for reactive flows, handling the complexities of timing for headers and status codes
+* **Reduced Boilerplate**: Simplified method signatures while maintaining type safety
+
+Example in hateoflux:
+```java
+@GetMapping
+public HalListResponse<Product, Void> getProducts(ServerWebExchange exchange) {
+    return HalListResponse.ok(
+        productAssembler.wrapInListWrapper(
+            productService.findAll(), 
+            exchange
+        )
+    ).withHeader("Custom-Header", "value");
+}
+```
+
 ## Assemblers and Boilerplate Code
-### Spring HATEOAS
+### Spring HATEOAS Approach
 Spring HATEOAS provides reactive assemblers like `ReactiveRepresentationModelAssembler` to help assemble resources in reactive applications. However, these assemblers are more skeletons than actual helpful Assemblers as opposed to their non-reactive counterparts. Implementing them is therefore verbose and may require additional boilerplate code. Developers need to manually create `EntityModel` instances and add links for each resource, which can clutter the code.
 
 An implementation of an assembler might look like this:
@@ -91,7 +142,7 @@ This looks acceptable until a more complex structure is needed, where other reso
 * **Verbosity**: Requires manual resource wrapping and link addition in assemblers.
 * **Boilerplate Code**: Repetitive patterns for essentially the same logic that need to be implemented in every assembler. This increases maintenance overhead.
 
-### hateoflux
+### hateoflux Approach
 In contrast, hateoflux's assemblers provide built-in methods to wrap a single or a list of resources. The only thing to implement is the part that is different from one resource to another: the links. The following is an implementation of `FlatHalWrapperAssembler`. The end result is the same as above:
 
 ```java
@@ -178,14 +229,14 @@ _**See also:**_
 * [Explained full example implementation of an assembler](./cookbook.html#using-an-assembler-to-create-a-hallistwrapper-for-resources-with-an-embedded-resource)
 
 ## Pagination Handling
-### Spring HATEOAS
+### Spring HATEOAS Approach
 In Spring MVC, the `PagedResourcesAssembler` helps create `PagedModel` instances with pagination metadata and navigation links (`prev`, `next`). However, in reactive environments using WebFlux and R2DBC, paging support is limited:
 
 * **Repositories Return `Flux<T>`**: With R2DBC, repositories return `Flux<T>` instead of `Page<T>`.
 * **No Native Paging Support**: The lack of `Page<T>` means tools like `PagedResourcesAssembler` are not available in WebFlux.
 * **Manual Implementation Required**: Developers must manually assemble pagination metadata and navigation links.
 
-### hateoflux
+### hateoflux Approach
 Hateoflux simplifies pagination in reactive environments by providing `HalListWrapper`, which encapsulate pagination metadata and handle navigation links automatically.
 
 Given we implemented the `ProductAssembler` i.e. simply overriding how and what links to create for a single and a list of `Product`s, adding pagination can be added as simple as below:
@@ -220,7 +271,7 @@ _**See also:**_
 ## Representation Model Processors
 Spring HATEOAS provides Representation Model Processors allowing developers to adjust hypermedia responses globally or conditionally. In contrast, hateoflux incorporates this functionality within its assemblers, combining the responsibilities of both assemblers and processors from Spring HATEOAS into a single, cohesive unit.
 
-### Spring HATEOAS
+### Spring HATEOAS Approach
 With Spring HATEOAS, `RepresentationModelProcessor` allows modifications to be applied to a resource representation post-assembly. This approach ensures that the logic for adding additional links or modifying the representation can be handled without modifying the core controller or assembler.
 
 Suppose an `Order` resource could have a link added to initiate payment without embedding the logic in the `OrderController` or `OrderAssembler`. The implementation could look like so:
@@ -243,7 +294,7 @@ public class PaymentProcessor implements RepresentationModelProcessor<EntityMode
 ```
 The processor is executed automatically by spring effectively postprocessing every `EntitiyModel<Order>`. It is therefore not required to change the controller or the assembler class.
 
-### hateoflux
+### hateoflux Approach
 Assemblers in hateoflux are used to encapsulate the creation of resource representations and the addition of hypermedia links, combining the functionality of both Spring HATEOAS assemblers and processors. This consolidated approach allows link-building logic and resource modifications to be centralized within the assembler, simplifying the development process.
 
 To mimic the functionality of Spring described above, an `OrderAssembler` would look like the following:
@@ -401,17 +452,19 @@ At present, **hateoflux does not support CURIEs**. While this is a beneficial fe
 ## Summary Table of Features
 The following table summarizes the main comparisons between Spring HATEOAS and hateoflux to highlight their strengths, limitations, and areas of alignment when building hypermedia-driven APIs in reactive Spring applications:
 
-| **Aspect**                          |                                                         **Spring HATEOAS (in WebFlux)**                                                         |                                           **hateoflux**                                           |
-|-------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|
-| **Representation Models**           | ⚠️<br/>Uses wrappers and inheritance-based models. Embedding resources has to be done manually and by inheritance or creating distinct classes. |  ✅<br/>Uses wrappers for main and embedded resources, keeping domain models clean and decoupled.  |
-| **Assemblers and Boilerplate Code** |                          ❌<br/>Verbose with manual resource wrapping and link addition; more boilerplate code needed.                           |      ✅<br/>Simplified with built-in methods; only links need to be specified in assemblers.       |
-| **Pagination Handling**             |                             ❌<br/>Limited or non-existing in reactive environments; requires manual implementation.                             | ✅<br/>Easy pagination with `HalListWrapper`; handles metadata and navigation links automatically. |
-| **Representation Model Processors** |              ✅<br/>Supports processors (`RepresentationModelProcessor`) to adjust hypermedia responses globally or conditionally.               |       ⚠️<br/>Functionality is incorporated within assemblers; processors are not separate.        |
-| **Resource Naming**                 |                                           ✅<br/>Uses `@Relation` for customizing serialization names.                                           |             ✅<br/>Also uses `@Relation` with identical functionality; no difference.              |
-| **Handling Collections**            |                               ⚠️<br/>Requires `collectList()`, which can impact performance with large datasets.                                |           ⚠️<br/>Also requires `collectList()`, with similar performance implications.            |
-| **Type Safety & Link Building**     |                            ✅<br/>Type-safe link building using `WebFluxLinkBuilder`; links returned as `Mono<Link>`.                            |   ✅<br/>Type-safe link building; provides `Link` immediately without wrapping in `Mono<Link>`.    |
-| **Documentation Support**           |                       ❌<br/>Better for Spring MVC; less comprehensive for WebFlux, challenging for reactive development.                        |        ✅<br/>Tailored for reactive Spring WebFlux with focused documentation and examples.        |
-| **Media Types**                     |                             ✅<br/>Supports multiple media types (HAL, Collection+JSON, etc.), offering flexibility.                             |  ⚠️<br/>Only supports HAL+JSON; simpler but less flexible for clients needing other media types.  |
-| **Affordance**                      |                         ✅<br/>Supports affordances, enabling clients to discover actions they can perform on resources.                         |                                ❌<br/>Does not support affordances                                 |
-| **CURIE Support**                   |                                       ✅<br/>Supports CURIEs (Compact URIs) for namespaced relation types.                                       |                                   ❌<br/>Does not support CURIEs                                   |
-| **Framework Weight**                |                                  ⚠️<br/>Heavier with more extensive features; may add complexity and overhead.                                  |   ✅<br/>Lightweight and easier to use in reactive applications; focuses on essential features.    |
+| **Aspect**                           |                                                         **Spring HATEOAS (in WebFlux)**                                                         |                                                           **hateoflux**                                                            |
+|--------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------:|
+| **Representation Models**            | ⚠️<br/>Uses wrappers and inheritance-based models. Embedding resources has to be done manually and by inheritance or creating distinct classes. |                  ✅<br/>Uses wrappers for main and embedded resources, keeping domain models clean and decoupled.                   |
+| **Response Types**                   |                 ⚠️<br/>No dedicated response types; relies on standard `ResponseEntity` with manual handling of reactive flows                  | ✅<br/>Dedicated response types (`HalResourceResponse`, `HalMultiResourceResponse`, `HalListResponse`) optimized for reactive flows |
+| **Type Safety and Boilerplate Code** |            ❌<br/>Complex nested generics and significant boilerplate when combining `ResponseEntity`, reactive types, and resources             |                                  ✅<br/>Clean, type-safe interfaces with dedicated response types                                   |
+| **Assemblers and Boilerplate Code**  |                          ❌<br/>Verbose with manual resource wrapping and link addition; more boilerplate code needed.                           |                       ✅<br/>Simplified with built-in methods; only links need to be specified in assemblers.                       |
+| **Pagination Handling**              |                             ❌<br/>Limited or non-existing in reactive environments; requires manual implementation.                             |                 ✅<br/>Easy pagination with `HalListWrapper`; handles metadata and navigation links automatically.                  |
+| **Representation Model Processors**  |              ✅<br/>Supports processors (`RepresentationModelProcessor`) to adjust hypermedia responses globally or conditionally.               |                        ⚠️<br/>Functionality is incorporated within assemblers; processors are not separate.                        |
+| **Resource Naming**                  |                                           ✅<br/>Uses `@Relation` for customizing serialization names.                                           |                              ✅<br/>Also uses `@Relation` with identical functionality; no difference.                              |
+| **Handling Collections**             |                               ⚠️<br/>Requires `collectList()`, which can impact performance with large datasets.                                |                            ⚠️<br/>Also requires `collectList()`, with similar performance implications.                            |
+| **Type Safety & Link Building**      |                            ✅<br/>Type-safe link building using `WebFluxLinkBuilder`; links returned as `Mono<Link>`.                            |                    ✅<br/>Type-safe link building; provides `Link` immediately without wrapping in `Mono<Link>`.                    |
+| **Documentation Support**            |                       ❌<br/>Better for Spring MVC; less comprehensive for WebFlux, challenging for reactive development.                        |                        ✅<br/>Tailored for reactive Spring WebFlux with focused documentation and examples.                         |
+| **Media Types**                      |                             ✅<br/>Supports multiple media types (HAL, Collection+JSON, etc.), offering flexibility.                             |                  ⚠️<br/>Only supports HAL+JSON; simpler but less flexible for clients needing other media types.                   |
+| **Affordance**                       |                         ✅<br/>Supports affordances, enabling clients to discover actions they can perform on resources.                         |                                                 ❌<br/>Does not support affordances                                                 |
+| **CURIE Support**                    |                                       ✅<br/>Supports CURIEs (Compact URIs) for namespaced relation types.                                       |                                                   ❌<br/>Does not support CURIEs                                                    |
+| **Framework Weight**                 |                                  ⚠️<br/>Heavier with more extensive features; may add complexity and overhead.                                  |                    ✅<br/>Lightweight and easier to use in reactive applications; focuses on essential features.                    |

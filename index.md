@@ -66,12 +66,19 @@ Getting started with hateoflux is straightforward, allowing you to seamlessly in
 
 ## Core Components
 
-hateoflux provides two primary wrappers to manage your resources effectively:
+hateoflux provides several components to manage your resources effectively:
 
+### Resource Wrappers
+Resource wrappers enhance resources with HAL elements to ensure they adhere to HAL standards:
 * **`HalResourceWrapper`**: Wraps individual resources, adding essential hypermedia links and optional embedded secondary resources.
 * **`HalListWrapper`**: Wraps collections of resources, handling pagination metadata and navigation links automatically.
 
-These wrappers ensure that your domain models remain clean and focused, while hateoflux manages the hypermedia aspects.
+### Response Types
+hateoflux provides a standardized, reactive, and convenient way for controller methods to return HAL responses. They include an HTTP status, optional HTTP headers, and implement the `ReactiveResponseEntity` interface. They wrap specific resource types as follows:
+* **`HalResourceResponse`**: Contains a `Mono` of  `HalResourceWrapper` for a single resources.
+* **`HalMultiResourceResponse`**: Contains a `Flux` of `HalResourceWrapper`s for a stream of multiple resources.
+* **`HalListResponse`**: Contains a `HalListWrapper` for returning collections of resources with pagination support.
+
 
 ## Assemblers
 

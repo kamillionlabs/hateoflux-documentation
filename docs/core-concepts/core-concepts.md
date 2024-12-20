@@ -11,7 +11,7 @@ has_toc: false
 Understanding the core concepts of hateoflux is key to building hypermedia-driven APIs that follow HATEOAS principles.
 
 ## Representation Model
-Learn how hateoflux wraps resources to enhance domain objects with hypermedia links and embedded resources, following the HAL (Hypertext Application Language) standard.
+hateoflux wraps resources to enhance domain objects with hypermedia links and embedded resources, following the HAL (Hypertext Application Language) standard. These capabilities include:
 
 * **Wrapping Resources**: Encapsulate single resources and collections with hypermedia links.
 * **Reactive Systems**: Handle multiple results effectively in reactive APIs.
@@ -21,7 +21,7 @@ Learn how hateoflux wraps resources to enhance domain objects with hypermedia li
 [Learn more about the representation model](./representation-model.html)
 
 ## Link Building
-Discover how to build navigable APIs using hateoflux's tools for link creation, including manual methods, URI templates, and integration with Spring WebFlux via `SpringControllerLinkBuilder`.
+hateoflux provides tools for link creation, including manual methods, URI templates, and integration with Spring WebFlux via `SpringControllerLinkBuilder`. These tools feature:
 
 * **Manual Link Building**: Use the `Link` class to create links.
 * **URI Templates**: Define dynamic URLs with placeholders.
@@ -38,3 +38,13 @@ Assemblers simplify creating HAL-compliant resource representations by wrapping 
   * **EmbeddingHalWrapperAssembler**: For resources with embedded content.
 
 [Learn how to use assemblers in hateoflux](./assemblers.html)
+
+## Response Handling
+hateoflux provides specialized response types for different resource scenarios while maintaining full integration with Spring WebFlux. These response types comprise:
+
+* **Type-Safe Responses**: Three response types for different use cases - single resources, streamed resources, and lists.
+* **Header Management**: Fluent API for HTTP header manipulation.
+* **Status Code Support**: Built-in support for HTTP status codes.
+* **Auto-configuration**: Zero setup required for response handling.
+
+[Learn about response handling in hateoflux](./response-handling.html)
