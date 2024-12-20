@@ -65,8 +65,8 @@ For example, when an order includes shipment details, the wrapper would encapsul
 ```
 _**See also:**_
 * [Fundamentals about resource wrappers](./core-concepts/representation-model.html#resource-wrappers)
-* [Explained full example on how to wrap a resource](./cookbook.html#creating-a-halresourcewrapper-without-an-embedded-resource)
-* [Explained full example on how to wrap a resource with another embedded resource](./cookbook.html#creating-a-halresourcewrapper-with-an-embedded-resource)
+* [Explained full example on how to wrap a resource](./cookbook/manual-wrapper-creation.html#creating-a-halresourcewrapper-without-an-embedded-resource)
+* [Explained full example on how to wrap a resource with another embedded resource](./cookbook/manual-wrapper-creation.html#creating-a-halresourcewrapper-with-an-embedded-resource)
 
 ## Response Handling
 Spring HATEOAS and hateoflux take significantly different approaches to handling responses in reactive applications, particularly regarding how they manage the challenges of HTTP responses in a reactive context.
@@ -226,7 +226,7 @@ As demonstrated, adding an embedded resource (or a list of them if required) is 
 
 _**See also:**_
 * [Fundamentals about assembler](./core-concepts/assemblers.html)
-* [Explained full example implementation of an assembler](./cookbook.html#using-an-assembler-to-create-a-hallistwrapper-for-resources-with-an-embedded-resource)
+* [Explained full example implementation of an assembler](./cookbook/assembler-based-wrapper-creation.html#using-an-assembler-to-create-a-hallistwrapper-for-resources-with-an-embedded-resource)
 
 ## Pagination Handling
 ### Spring HATEOAS Approach
@@ -266,7 +266,7 @@ The `wrapInListWrapper` will automatically append configured links in the assemb
 
 _**See also:**_
 * [Fundamentals about Pagination](./core-concepts/representation-model.html#pagination)
-* [Explained full example on how to wrap a list of resources with pagination](./cookbook.html#creating-a-hallistwrapper-with-pagination)
+* [Explained full example on how to wrap a list of resources with pagination](./cookbook/manual-wrapper-creation.html#creating-a-hallistwrapper-with-pagination)
 
 ## Representation Model Processors
 Spring HATEOAS provides Representation Model Processors allowing developers to adjust hypermedia responses globally or conditionally. In contrast, hateoflux incorporates this functionality within its assemblers, combining the responsibilities of both assemblers and processors from Spring HATEOAS into a single, cohesive unit.
