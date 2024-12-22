@@ -1,11 +1,11 @@
 ---
-title: "Response Handling"
+title: "Response Types"
 layout: default
 parent: "Core Concepts"
 nav_order: 4
 ---
 
-# Response Handling
+# Response Types
 {: .no_toc }
 <br>
 1. TOC
@@ -117,11 +117,11 @@ return HalResourceResponse.of(someObject, HttpStatus.PARTIAL_CONTENT);
 
 Each response type includes also factory methods for common HTTP status codes:
 
-* `ok()` - HTTP 200
-* `created()` - HTTP 201
-* `accepted()` - HTTP 202
-* `noContent()` - HTTP 204
-* `notFound()` - HTTP 404
+* `ok()` - `HTTP 200`
+* `created()` - `HTTP 201`
+* `accepted()` - `HTTP 202`
+* `noContent()` - `HTTP 204`
+* `notFound()` - `HTTP 404`
 
 {: .important }
 Status codes in `Hal*Response`s are not designed to include detailed messages, especially error messages. `Hal*Response`s allow for flexibility in API design by enabling expressiveness without relying on exceptions. For example, `HTTP 206 Partial Content` and `304 Not Modified` are used to convey specific states that do not necessarily represent exceptions. However, in cases where an exception does occur, it is advisable to use an `ExceptionHandler` instead.

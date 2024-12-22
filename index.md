@@ -86,6 +86,6 @@ To simplify the creation of these wrappers, hateoflux offers assembler interface
 
 ## Additional Resources
 
-For practical guidance and detailed examples, visit the [cookbook](./docs/cookbook/cookbook.html), which showcases multiple use cases and scenarios. To gain a deeper understanding of hateoflux's foundational concepts, including representation models, link building, and assemblers, explore the [core concepts](./docs/core-concepts/core-concepts.html) section.
+For practical guidance and detailed examples, visit the [cookbook](./docs/cookbook/), which showcases multiple use cases and scenarios. To gain a deeper understanding of hateoflux's foundational concepts, including representation models, link building, and assemblers, explore the [core concepts](./docs/core-concepts/) section.
 
 By leveraging these components and resources, you can efficiently build robust, hypermedia-driven APIs with hateoflux in your reactive Spring applications.

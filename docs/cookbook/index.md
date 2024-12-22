@@ -1,7 +1,7 @@
 ---
 title: "Cookbook: Examples &amp; Use Cases"
 layout: default
-nav_order: 3
+nav_order: 4
 has_toc: false
 ---
 
@@ -34,5 +34,17 @@ Use of assemblers to streamline wrapper creation and reduce boilerplate code:
 * **Link Management**: Generate consistent links across resources.
 
 [Learn about assembler-based wrapper creation](./assembler-based-wrapper-creation.html)
+
+
+### Reactive Response Types
+Use of specialized response types for different resource scenarios:
+
+* **Status Code Handling**: Return appropriate HTTP status codes for different scenarios.
+* **Header Management**: Handle HTTP headers with a fluent API.
+* **Single Resources**: Return individual HAL resources with proper reactive wrapping.
+* **Streaming Resources**: Stream multiple resources efficiently.
+* **Collection Responses**: Handle lists and pagination with type safety.
+
+[Learn about reactive response handling](./response-type-creation.html)
 
 Each recipe section contains complete, working examples that you can use as templates for your own implementations.

@@ -47,4 +47,4 @@ hateoflux provides specialized response types for different resource scenarios w
 * **Status Code Support**: Built-in support for HTTP status codes.
 * **Auto-configuration**: Zero setup required for response handling.
 
-[Learn about response handling in hateoflux](./response-handling.html)
+[Learn about response handling in hateoflux](./response-types.html)
