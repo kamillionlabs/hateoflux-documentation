@@ -3,7 +3,8 @@ description: Documentation of the HATEOAS-Webflux library hateoflux
 version: 1.2.0
 theme: just-the-docs
 
-url: https://hateoflux.kamillionlabs.de
+url: https://kamillionlabs.github.io
+baseurl: /hateoflux-documentation
 
 
 logo: "/assets/logos/hateoflux_black.svg"
